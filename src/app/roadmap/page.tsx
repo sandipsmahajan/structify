@@ -1,0 +1,8 @@
+import { Lock, Unlock } from "lucide-react";
+import { AppShell } from "@/components/layout/AppShell";
+import { Badge, Button, Card, SectionTitle } from "@/components/ui";
+import { roadmap } from "@/lib/content";
+
+export default function RoadmapPage() {
+  return <AppShell><div className="mx-auto max-w-7xl px-4 py-10"><SectionTitle eyebrow="roadmap" title="Structured unlock path" text="Each course opens after prerequisites are complete, guiding learners from programming foundations to advanced interviews." /><div className="mt-8 grid gap-4">{roadmap.map((course, index) => <Card key={course.id} className="grid gap-4 md:grid-cols-[80px_1fr_180px]"><div className="grid size-14 place-items-center rounded-lg bg-slate-100 font-display text-xl font-extrabold dark:bg-white/10">{index + 1}</div><div><div className="flex flex-wrap items-center gap-2"><h2 className="font-display text-2xl font-extrabold">{course.title}</h2><Badge>{course.level}</Badge></div><p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Prerequisites: {course.prerequisites.length ? course.prerequisites.join(", ") : "None"}</p><div className="mt-4 h-2 rounded-full bg-slate-200 dark:bg-white/10"><div className="h-2 rounded-full bg-mint" style={{ width: `${course.progress}%` }} /></div></div><div className="flex items-center justify-end gap-3">{course.status === "locked" ? <Lock className="text-slate-400" /> : <Unlock className="text-mint" />}<Button href={course.lessons[0] ? `/learn/${course.lessons[0]}` : "/dashboard"} variant={course.status === "locked" ? "secondary" : "primary"}>{course.status}</Button></div></Card>)}</div></div></AppShell>;
+}

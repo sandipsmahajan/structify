@@ -1,0 +1,10 @@
+import { Building2, Mic, Video, Zap } from "lucide-react";
+import { AppShell } from "@/components/layout/AppShell";
+import { Badge, Button, Card, SectionTitle } from "@/components/ui";
+
+const companies = ["Google", "Amazon", "Microsoft", "Meta", "Apple", "Netflix", "Uber", "Adobe"];
+const tracks = ["Blind 75", "NeetCode 150", "Graph Intensive", "DP Mastery", "Systematic Review"];
+
+export default function InterviewPage() {
+  return <AppShell><div className="mx-auto max-w-7xl px-4 py-10"><SectionTitle eyebrow="interview" title="Practice under realistic pressure" text="Company-wise question banks, curated tracks, and mock interviews with rubric-based feedback." /><div className="mt-8 grid gap-4 md:grid-cols-3"><Card><Video className="text-brand" /><h3 className="mt-3 font-display text-xl font-extrabold">Mock interview</h3><p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Voice, code, hints, and post-session review.</p></Card><Card><Mic className="text-mint" /><h3 className="mt-3 font-display text-xl font-extrabold">Explain aloud</h3><p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Score invariants, tradeoffs, and dry run clarity.</p></Card><Card><Zap className="text-amber" /><h3 className="mt-3 font-display text-xl font-extrabold">Adaptive queue</h3><p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Weak patterns appear more often.</p></Card></div><div className="mt-8 grid gap-6 lg:grid-cols-2"><Card><h2 className="font-display text-2xl font-extrabold">Tracks</h2><div className="mt-4 grid gap-3">{tracks.map((track) => <div key={track} className="flex items-center justify-between rounded-lg bg-slate-100 p-4 dark:bg-white/10"><span className="font-bold">{track}</span><Button href="/practice" variant="secondary">Start</Button></div>)}</div></Card><Card><h2 className="font-display text-2xl font-extrabold">Company banks</h2><div className="mt-4 flex flex-wrap gap-2">{companies.map((company) => <Badge key={company}><Building2 size={14} /> {company}</Badge>)}</div></Card></div></div></AppShell>;
+}

@@ -1,0 +1,27 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: structify-backend
+  datasource:
+    url: ${STRUCTIFY_DB_URL:jdbc:postgresql://localhost:5432/structify}
+    username: ${STRUCTIFY_DB_USER:structify}
+    password: ${STRUCTIFY_DB_PASSWORD:structify}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  data:
+    redis:
+      host: ${STRUCTIFY_REDIS_HOST:localhost}
+      port: ${STRUCTIFY_REDIS_PORT:6379}
+
+structify:
+  jwt:
+    issuer: structify
+    secret: ${STRUCTIFY_JWT_SECRET:replace-this-in-production}
+  ai:
+    api-key: ${STRUCTIFY_AI_API_KEY:}
+    base-url: ${STRUCTIFY_AI_BASE_URL:https://api.example.com/v1}
+    model: ${STRUCTIFY_AI_MODEL:tutor-model}
