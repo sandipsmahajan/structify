@@ -1,13 +1,15 @@
 import Link from "next/link";
-import { Brain, Code2, GraduationCap, LayoutDashboard, Map, Newspaper, ShieldCheck, Trophy, User } from "lucide-react";
+import { Brain, ChartNoAxesCombined, Code2, GraduationCap, LayoutDashboard, Map, Newspaper, Search, ShieldCheck, Trophy, User } from "lucide-react";
 import { Button } from "@/components/ui";
 
 const nav = [
   ["Dashboard", "/dashboard", LayoutDashboard],
   ["Roadmap", "/roadmap", Map],
+  ["Big O", "/big-o-lab", ChartNoAxesCombined],
   ["Learn", "/learn/binary-search", GraduationCap],
   ["Practice", "/practice", Code2],
   ["Interview", "/interview", Trophy],
+  ["Search", "/search", Search],
   ["Blog", "/blog", Newspaper],
   ["Admin", "/admin", ShieldCheck],
   ["Profile", "/profile", User]

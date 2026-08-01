@@ -1,19 +1,26 @@
 export type Difficulty = "Easy" | "Medium" | "Hard";
 
 export type LessonSectionId =
-  | "Introduction"
+  | "Overview"
   | "Motivation"
-  | "Real-world examples"
-  | "Visualization"
+  | "Problem Statement"
+  | "Real-world Example"
+  | "Interactive Visualization"
+  | "Step-by-step Animation"
   | "Complexity Analysis"
-  | "Interactive Playground"
-  | "Code Examples"
   | "Dry Run"
+  | "Pseudo Code"
+  | "Java"
+  | "Python"
+  | "C++"
+  | "JavaScript"
+  | "Interactive Playground"
   | "Quiz"
-  | "Practice Questions"
+  | "Practice Problems"
   | "Interview Questions"
+  | "Common Mistakes"
   | "Summary"
-  | "Next Lesson";
+  | "Related Lessons";
 
 export type VisualizationEvent = {
   id: string;
@@ -22,6 +29,8 @@ export type VisualizationEvent = {
   activeIndexes: number[];
   values: number[];
   codeLine: number;
+  operationCount?: number;
+  memoryUnits?: number;
 };
 
 export type CodeExamples = Record<"Java" | "Python" | "C++" | "JavaScript" | "Go", string>;
@@ -57,6 +66,7 @@ export type Lesson = {
   practice: PracticeProblem[];
   interview: string[];
   nextLesson?: string;
+  unlockRequirements?: string[];
 };
 
 export type Course = {

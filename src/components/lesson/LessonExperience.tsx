@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bookmark, CheckCircle2, Download, Save } from "lucide-react";
+import { Bookmark, CheckCircle2, Cpu, Download, HardDrive, LockKeyhole, Save } from "lucide-react";
 import type { Lesson } from "@/lib/types";
 import { AITutor } from "./AITutor";
 import { CodePlayground } from "./CodePlayground";
+import { ComplexityDerivationMode } from "./ComplexityDerivationMode";
 import { QuizEngine } from "./QuizEngine";
 import { ArrayVisualizer } from "@/components/visualization/ArrayVisualizer";
 import { TimelineController } from "@/components/visualization/TimelineController";
@@ -17,6 +18,7 @@ export function LessonExperience({ lesson }: { lesson: Lesson }) {
   const event = lesson.visualization[index];
   const completeLesson = useLearningStore((state) => state.completeLesson);
   const toggleBookmark = useLearningStore((state) => state.toggleBookmark);
+  const coreSections = Object.entries(lesson.sections).filter(([title]) => !["Complexity Analysis", "Pseudo Code", "Java", "Python", "C++", "JavaScript", "Quiz", "Practice Problems", "Interview Questions"].includes(title));
 
   useEffect(() => {
     if (!playing) return;
@@ -32,13 +34,18 @@ export function LessonExperience({ lesson }: { lesson: Lesson }) {
 
     <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
       <div className="space-y-8">
-        <Card><div className="grid gap-4 md:grid-cols-3">{lesson.prerequisites.map((item) => <div key={item} className="rounded-lg bg-slate-100 p-4 dark:bg-white/10"><CheckCircle2 className="mb-3 text-mint" size={20} /><p className="font-bold">{item}</p></div>)}</div></Card>
-        {Object.entries(lesson.sections).slice(0, 4).map(([title, bullets]) => <Card key={title}><h2 className="font-display text-2xl font-extrabold">{title}</h2><div className="mt-4 grid gap-3 md:grid-cols-2">{bullets.map((item) => <p key={item} className="rounded-lg bg-white/70 p-4 text-sm leading-6 text-slate-600 dark:bg-white/5 dark:text-slate-300">{item}</p>)}</div></Card>)}
+        <Card><div className="grid gap-4 md:grid-cols-3">{lesson.prerequisites.length ? lesson.prerequisites.map((item) => <div key={item} className="rounded-lg bg-slate-100 p-4 dark:bg-white/10"><CheckCircle2 className="mb-3 text-mint" size={20} /><p className="font-bold">{item}</p></div>) : <div className="rounded-lg bg-slate-100 p-4 dark:bg-white/10"><CheckCircle2 className="mb-3 text-mint" size={20} /><p className="font-bold">No prerequisites</p></div>}</div></Card>
+        <Card><h2 className="font-display text-2xl font-extrabold">Unlock requirements</h2><div className="mt-4 grid gap-3 md:grid-cols-4">{lesson.unlockRequirements?.map((item) => <div key={item} className="rounded-lg bg-slate-100 p-4 dark:bg-white/10"><LockKeyhole className="mb-3 text-brand" size={18} /><p className="text-sm font-bold">{item}</p></div>)}</div></Card>
+        {coreSections.map(([title, bullets]) => <Card key={title}><h2 className="font-display text-2xl font-extrabold">{title}</h2><div className="mt-4 grid gap-3 md:grid-cols-2">{bullets.map((item) => <p key={item} className="rounded-lg bg-white/70 p-4 text-sm leading-6 text-slate-600 dark:bg-white/5 dark:text-slate-300">{item}</p>)}</div></Card>)}
         <section className="space-y-4"><SectionTitle eyebrow="visualization" title="Event-driven animation" text="Operations emit structured events. The visualizer, code editor, dry run, and tutor all subscribe to the same step." /><ArrayVisualizer event={event} /><TimelineController events={lesson.visualization} index={index} setIndex={setIndex} playing={playing} setPlaying={setPlaying} /></section>
+        <div className="grid gap-4 md:grid-cols-2"><Card><Cpu className="text-brand" /><h2 className="mt-3 font-display text-2xl font-extrabold">Time visualizer</h2><p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Operations counted: {event.operationCount ?? index + 1}</p><div className="mt-4 h-3 rounded-full bg-slate-200 dark:bg-white/10"><div className="h-3 rounded-full bg-brand" style={{ width: `${Math.min(100, ((event.operationCount ?? index + 1) / 21) * 100)}%` }} /></div></Card><Card><HardDrive className="text-mint" /><h2 className="mt-3 font-display text-2xl font-extrabold">Space visualizer</h2><p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Memory units active: {event.memoryUnits ?? 1}</p><div className="mt-4 grid grid-cols-8 gap-2">{Array.from({ length: 8 }).map((_, cell) => <span key={cell} className={`h-8 rounded-md ${cell < (event.memoryUnits ?? 1) ? "bg-mint" : "bg-slate-200 dark:bg-white/10"}`} />)}</div></Card></div>
         <Card><h2 className="font-display text-2xl font-extrabold">Complexity Analysis</h2><div className="mt-4 grid gap-3 md:grid-cols-3">{lesson.sections["Complexity Analysis"].map((item) => <div key={item} className="rounded-lg border border-slate-200 p-4 text-sm dark:border-white/10">{item}</div>)}</div></Card>
+        <ComplexityDerivationMode lesson={lesson} activeCodeLine={event.codeLine} />
+        <Card><h2 className="font-display text-2xl font-extrabold">Pseudo Code</h2><ol className="mt-4 grid gap-2 text-sm text-slate-600 dark:text-slate-300">{lesson.sections["Pseudo Code"].map((item, step) => <li key={item} className="rounded-lg bg-slate-100 p-3 dark:bg-white/10">{step + 1}. {item}</li>)}</ol></Card>
         <section className="space-y-4"><SectionTitle eyebrow="code" title="Live code execution" text="Editor, visualization, execution output, and tutor state stay synchronized." /><CodePlayground code={lesson.code} activeLine={event.codeLine} /></section>
         <section className="space-y-4"><SectionTitle eyebrow="quiz" title="Interactive checks" /><QuizEngine questions={lesson.quiz} /></section>
-        <Card><h2 className="font-display text-2xl font-extrabold">Practice and interview</h2><div className="mt-4 grid gap-3">{lesson.practice.map((problem) => <div key={problem.title} className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-slate-100 p-4 dark:bg-white/10"><div><p className="font-bold">{problem.title}</p><p className="text-sm text-slate-500">{problem.pattern} - {problem.company}</p></div><Badge>{problem.difficulty}</Badge></div>)}</div></Card>
+        <Card><h2 className="font-display text-2xl font-extrabold">Practice Problems</h2><div className="mt-4 grid gap-3">{lesson.practice.map((problem) => <div key={problem.title} className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-slate-100 p-4 dark:bg-white/10"><div><p className="font-bold">{problem.title}</p><p className="text-sm text-slate-500">{problem.pattern} - {problem.company}</p></div><Badge>{problem.difficulty}</Badge></div>)}</div></Card>
+        <Card><h2 className="font-display text-2xl font-extrabold">Interview Questions</h2><div className="mt-4 grid gap-3 md:grid-cols-3">{lesson.interview.map((item) => <p key={item} className="rounded-lg bg-slate-100 p-4 text-sm font-semibold dark:bg-white/10">{item}</p>)}</div></Card>
         <Button href="/practice" className="w-full" variant="primary">Continue to practice mode</Button>
         <button className="focus-ring w-full rounded-lg bg-mint px-4 py-3 font-bold text-ink" onClick={() => completeLesson(lesson.slug, lesson.xp)}>Mark lesson complete and earn {lesson.xp} XP</button>
       </div>
