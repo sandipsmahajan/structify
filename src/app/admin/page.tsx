@@ -1,8 +1,0 @@
-import { BarChart3, Database, FilePenLine, ShieldCheck } from "lucide-react";
-import { AppShell } from "@/components/layout/AppShell";
-import { Badge, Button, Card, SectionTitle } from "@/components/ui";
-import { adminEntities } from "@/lib/content";
-
-export default function AdminPage() {
-  return <AppShell><div className="mx-auto max-w-7xl px-4 py-10"><SectionTitle eyebrow="admin" title="Content operations" text="Manage courses, lessons, animations, quizzes, problems, users, progress, certificates, and blog content." /><div className="mt-8 grid gap-4 md:grid-cols-4"><Card><Database className="text-brand" /><p className="mt-3 font-bold">Config-first CMS</p></Card><Card><FilePenLine className="text-mint" /><p className="mt-3 font-bold">Lesson editor</p></Card><Card><BarChart3 className="text-amber" /><p className="mt-3 font-bold">Progress analytics</p></Card><Card><ShieldCheck className="text-coral" /><p className="mt-3 font-bold">Role access</p></Card></div><Card className="mt-8"><div className="flex items-center justify-between"><h2 className="font-display text-2xl font-extrabold">Manage entities</h2><Button href="/learn/binary-search">Preview lesson</Button></div><div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3">{adminEntities.map((entity) => <div key={entity.name} className="rounded-lg border border-slate-200 p-4 dark:border-white/10"><div className="flex items-center justify-between"><h3 className="font-bold">{entity.name}</h3><Badge>{entity.count}</Badge></div><p className="mt-3 text-sm text-slate-500">{entity.status}</p></div>)}</div></Card></div></AppShell>;
-}
