@@ -60,6 +60,11 @@ export function Navbar() {
             <div className="w-8 h-8 rounded-full bg-bd-raised animate-pulse" />
           ) : isSignedIn ? (
             <div className="flex items-center gap-3">
+              <Link href="/dashboard">
+                <DiamondButton variant="ghost" size="sm">
+                  Dashboard
+                </DiamondButton>
+              </Link>
               {session.user?.image ? (
                 <img
                   src={session.user.image}

@@ -30,6 +30,14 @@ export default async function TopicPage({ params }: Props) {
     if (!user?.isPaid) redirect(`/paywall?slug=${topic.course.slug}`);
   }
 
+  if (userId) {
+    await prisma.userProgress.upsert({
+      where: { userId_topicId: { userId, topicId: topic.id } },
+      update: { lastVisited: new Date() },
+      create: { userId, topicId: topic.id, status: "in_progress" },
+    });
+  }
+
   const paragraphs = (topic.theoryContent ?? "")
     .split("\n\n")
     .filter(Boolean);
