@@ -57,7 +57,6 @@ export function DataCube({
         color={isHighlighted ? "#FFFFFF" : "#E8ECF1"}
         anchorX="center"
         anchorY="middle"
-        font="/fonts/Inter-Bold.ttf"
       >
         {String(value)}
       </Text>
