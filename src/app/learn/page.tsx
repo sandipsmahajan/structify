@@ -7,12 +7,6 @@ export default async function LearnPage() {
   const session = await auth();
   const userId = session?.user?.id;
 
-  let isPaid = false;
-  if (userId) {
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { isPaid: true } });
-    isPaid = user?.isPaid ?? false;
-  }
-
   const courses = await prisma.course.findMany({
     orderBy: { order: "asc" },
     include: {
@@ -63,10 +57,7 @@ export default async function LearnPage() {
       <div className="space-y-10">
         {courses.map((course) => {
           const tier = tierColors[course.tier] ?? tierColors[0];
-          const locked = course.isPaid && !isPaid;
-          const href = locked
-            ? `/paywall?slug=${course.slug}`
-            : `/learn/${course.slug}`;
+          const href = `/learn/${course.slug}`;
 
           const total = course.topics.length;
           const started = userId
@@ -89,11 +80,6 @@ export default async function LearnPage() {
                   Tier {course.tier}
                 </span>
                 <h2 className="heading-display text-2xl">{course.title}</h2>
-                {course.isPaid && (
-                  <span className={`text-[10px] uppercase tracking-wider ${isPaid ? "text-bd-emerald" : "text-bd-gold"}`}>
-                    {isPaid ? "Unlocked" : "Premium"}
-                  </span>
-                )}
               </div>
 
               {userId && total > 0 && (
@@ -121,7 +107,7 @@ export default async function LearnPage() {
                   const isCompleted = topicProgress.some((p: { status: string }) => p.status === "completed");
 
                   return (
-                    <Link key={topic.id} href={locked ? href : `${href}/${topic.slug}`}>
+                    <Link key={topic.id} href={`${href}/${topic.slug}`}>
                       <DiamondCard glow className="p-5 h-full group cursor-pointer transition-colors duration-200 hover:border-bd-border-active relative">
                         <div className="flex items-start gap-3">
                           <span className={`w-8 h-8 clip-diamond-sm flex items-center justify-center text-xs font-bold shrink-0 ${isCompleted ? "bg-bd-emerald/20 text-bd-emerald" : tier.bg}`}>
@@ -135,17 +121,9 @@ export default async function LearnPage() {
                           </span>
                           <div>
                             <h3 className="heading-section text-sm mb-1">{topic.title}</h3>
-                            <div className="flex items-center gap-2">
-                              <p className="text-xs text-bd-text-muted">
-                                {isCompleted ? "Completed" : topicProgress.length > 0 ? "In Progress" : "Theory + Visualizer"}
-                              </p>
-                              {locked && (
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-bd-gold shrink-0">
-                                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                                  <path d="M7 11V7a5 5 0 0110 0v4" />
-                                </svg>
-                              )}
-                            </div>
+                            <p className="text-xs text-bd-text-muted">
+                              {isCompleted ? "Completed" : topicProgress.length > 0 ? "In Progress" : "Theory + Visualizer"}
+                            </p>
                           </div>
                         </div>
                       </DiamondCard>

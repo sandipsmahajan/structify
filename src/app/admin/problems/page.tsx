@@ -2,12 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { DiamondCard } from "@/components/ui/diamond-card";
 import { DiamondButton } from "@/components/ui/diamond-button";
 import Link from "next/link";
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
 
 export default async function AdminProblemsPage() {
-  const session = await auth();
-  if (!session?.user) redirect("/auth/signin");
 
   const topics = await prisma.topic.findMany({
     orderBy: [{ courseId: "asc" }, { order: "asc" }],

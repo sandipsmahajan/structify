@@ -3,7 +3,7 @@ import { DiamondCard } from "@/components/ui/diamond-card";
 import { DiamondButton } from "@/components/ui/diamond-button";
 import { auth } from "@/lib/auth";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 interface Props {
   params: Promise<{ courseSlug: string; topicSlug: string }>;
@@ -23,12 +23,6 @@ export default async function TopicPage({ params }: Props) {
   });
 
   if (!topic || topic.course.slug !== courseSlug) notFound();
-
-  if (topic.course.isPaid) {
-    if (!userId) redirect("/auth/signin");
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { isPaid: true } });
-    if (!user?.isPaid) redirect(`/paywall?slug=${topic.course.slug}`);
-  }
 
   if (userId) {
     await prisma.userProgress.upsert({

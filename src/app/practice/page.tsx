@@ -1,20 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { DiamondCard } from "@/components/ui/diamond-card";
-import { DiamondButton } from "@/components/ui/diamond-button";
 import { SolveToggle } from "@/components/practice/solve-toggle";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
-import Link from "next/link";
 
 export default async function PracticePage() {
   const session = await auth();
   const userId = session?.user?.id;
-
-  let isPaid = false;
-  if (userId) {
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { isPaid: true } });
-    isPaid = user?.isPaid ?? false;
-  }
 
   const courses = await prisma.course.findMany({
     orderBy: { order: "asc" },
@@ -56,7 +48,6 @@ export default async function PracticePage() {
 
       {courses.map((course) => {
         const tier = tierColors[course.tier] ?? tierColors[0];
-        const locked = course.isPaid && !isPaid;
 
         const allProblems = course.topics.flatMap((t) => t.problems);
         const total = allProblems.length;
@@ -72,11 +63,6 @@ export default async function PracticePage() {
                 Tier {course.tier}
               </span>
               <h2 className="heading-display text-xl">{course.title}</h2>
-              {course.isPaid && (
-                <span className={`text-[10px] uppercase tracking-wider ${isPaid ? "text-bd-emerald" : "text-bd-gold"}`}>
-                  {isPaid ? "Unlocked" : "Premium"}
-                </span>
-              )}
             </div>
 
             {userId && total > 0 && (
@@ -96,21 +82,6 @@ export default async function PracticePage() {
               </div>
             )}
 
-            {locked && (
-              <DiamondCard className="p-4 mb-4 bg-bd-gold-dim/30 border-bd-gold/20">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm text-bd-text-secondary">
-                      This tier contains {total} practice problems. Unlock lifetime access to solve them.
-                    </p>
-                  </div>
-                  <Link href="/pricing">
-                    <DiamondButton variant="gold" size="sm">Unlock Tier {course.tier}</DiamondButton>
-                  </Link>
-                </div>
-              </DiamondCard>
-            )}
-
             {course.topics.map((topic) => (
               <div key={topic.id} className="mb-6">
                 <h3 className="heading-section text-sm text-bd-text-secondary mb-3">
@@ -122,7 +93,7 @@ export default async function PracticePage() {
                       ? problem.userStatus?.[0]?.solved ?? false
                       : false;
                     return (
-                      <DiamondCard key={problem.id} className={`p-4 flex flex-wrap items-center justify-between gap-3 ${locked ? "opacity-50" : ""}`}>
+                      <DiamondCard key={problem.id} className="p-4 flex flex-wrap items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
                           <span
                             className={`px-2 py-0.5 clip-diamond-sm text-[10px] font-bold uppercase ${
@@ -159,13 +130,7 @@ export default async function PracticePage() {
                               HackerRank
                             </a>
                           )}
-                          {locked ? (
-                            <DiamondButton variant="ghost" size="sm" disabled className="opacity-40">
-                              Locked
-                            </DiamondButton>
-                          ) : (
-                            <SolveToggle problemId={problem.id} initialSolved={isSolved} />
-                          )}
+                          <SolveToggle problemId={problem.id} initialSolved={isSolved} />
                         </div>
                       </DiamondCard>
                     );

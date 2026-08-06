@@ -2,14 +2,23 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { DiamondCard } from "@/components/ui/diamond-card";
 import { DiamondButton } from "@/components/ui/diamond-button";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 
 export default async function DashboardPage() {
   const session = await auth();
-  if (!session?.user?.id) redirect("/auth/signin");
+  const userId = session?.user?.id;
 
-  const userId = session.user.id;
+  if (!userId) {
+    return (
+      <div className="pt-24 pb-16 px-6 max-w-5xl mx-auto min-h-screen">
+        <h1 className="heading-display text-3xl mb-6">Dashboard</h1>
+        <DiamondCard className="p-8 text-center">
+          <p className="text-bd-text-secondary mb-4">Sign in to track your progress, save solved problems, and unlock premium features.</p>
+          <Link href="/auth/signin"><DiamondButton variant="primary" size="sm">Sign In</DiamondButton></Link>
+        </DiamondCard>
+      </div>
+    );
+  }
 
   const [user, solvedCount, allProblemsCount, courses, recentStatuses] = await Promise.all([
     prisma.user.findUnique({
