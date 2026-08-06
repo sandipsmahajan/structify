@@ -54,6 +54,7 @@ export function Navbar() {
 
   const isLoading = status === "loading";
   const isSignedIn = status === "authenticated" && !!session?.user;
+  const isPaid = (session?.user as { isPaid?: boolean } | undefined)?.isPaid ?? false;
 
   return (
     <header
@@ -106,6 +107,9 @@ export function Navbar() {
                   {(session.user?.name ?? "U")[0].toUpperCase()}
                 </div>
               )}
+              <span className={`clip-diamond-sm px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${isPaid ? "bg-bd-gold-dim text-bd-gold" : "bg-bd-cyan-dim text-bd-cyan"}`}>
+                {isPaid ? "Lifetime" : "Free"}
+              </span>
               <Link href="/api/auth/signout">
                 <DiamondButton variant="ghost" size="sm">
                   Sign Out

@@ -23,6 +23,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, user }) {
       if (session.user) {
         session.user.id = user.id;
+        (session.user as { isPaid?: boolean }).isPaid = (user as { isPaid?: boolean }).isPaid ?? false;
       }
       return session;
     },

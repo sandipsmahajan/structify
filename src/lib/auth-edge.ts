@@ -20,9 +20,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     strategy: "jwt",
   },
   callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.sub = user.id;
+        token.isPaid = (user as { isPaid?: boolean }).isPaid ?? false;
+      }
+      return token;
+    },
     async session({ session, token }) {
       if (session.user && token.sub) {
         session.user.id = token.sub;
+        (session.user as { isPaid?: boolean }).isPaid = (token.isPaid as boolean) ?? false;
       }
       return session;
     },
