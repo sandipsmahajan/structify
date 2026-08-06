@@ -74,13 +74,14 @@ model Course {
 }
 
 model Topic {
-  id             String  @id @default(cuid())
-  courseId       String
-  title          String
-  slug           String
-  theoryContent  String?
-  visualizerType String?
-  order          Int
+  id               String  @id @default(cuid())
+  courseId         String
+  title            String
+  slug             String
+  theoryContent    String?
+  realWorldUseCase String?
+  visualizerType   String?
+  order            Int
 
   course   Course          @relation(fields: [courseId], references: [id])
   problems Problem[]

@@ -141,6 +141,15 @@ export default async function TopicPage({ params }: Props) {
 
         {/* Sidebar */}
         <div className="space-y-4">
+          {topic.realWorldUseCase && (
+            <DiamondCard className="p-5 border-bd-gold/20 bg-bd-gold-dim/10">
+              <h3 className="heading-section text-sm mb-2 text-bd-gold">Why This Matters</h3>
+              <p className="text-xs text-bd-text-secondary leading-relaxed">
+                {topic.realWorldUseCase}
+              </p>
+            </DiamondCard>
+          )}
+
           <DiamondCard className="p-5">
             <h3 className="heading-section text-sm mb-3 text-bd-cyan">Interactive Visualizer</h3>
             <p className="text-xs text-bd-text-secondary mb-4">

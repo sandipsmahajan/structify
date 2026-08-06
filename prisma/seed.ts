@@ -6,6 +6,37 @@ const dbUrl = process.env.DATABASE_URL ?? "file:./dev.db";
 const adapter = new PrismaLibSql({ url: dbUrl });
 const prisma = new PrismaClient({ adapter } as never);
 
+const realWorldUseCases: Record<string, string> = {
+  "big-o-complexity": "Spotify's shuffle algorithm must be O(n log n) to randomize millions of playlists without lag. Google Search indexes trillions of pages using O(1) hash lookups -- complexity analysis is the difference between a snappy app and an unusable one.",
+  "recursion-call-stack": "Git's internal merge-diff engine recursively compares file trees when you run 'git diff' -- even on the Linux kernel's 30M lines of code. Every `git merge` walks a recursive tree of commits.",
+  "bit-manipulation": "Redis uses bitmaps (SETBIT/GETBIT) to track 2M+ daily active users in just 250KB of memory. IPv4 subnet masks and Unix file permissions (chmod 755) rely entirely on bitwise operations.",
+  "modular-math": "RSA encryption securing HTTPS connections for every online bank transaction uses modular exponentiation: (m^e mod n). Without modular arithmetic, modern cryptography would not exist.",
+  "memory-model": "Chrome's V8 JavaScript engine uses a generational heap: short-lived objects in a fast-scavenge space, long-lived survivors promoted to old-space. Understanding stack vs heap prevents memory leaks in production apps.",
+  "arrays-strings": "A 4K display is a 3840x2160 pixel array -- every Instagram filter applies matrix transforms across these arrays millions of times per second. Photoshop edits and camera RAW processing are array computation at scale.",
+  "linked-lists": "Spotify's play queue and your browser's back/forward history are doubly-linked lists. Adding songs or navigating pages is O(1) at either end -- no array resizing needed.",
+  "stacks": "VSCode's undo (Ctrl+Z), Photoshop's history panel, and browser navigation all use stacks. The JavaScript call stack traces errors from your function back to the global scope -- every error you've debugged relied on a stack.",
+  "queues": "Apache Kafka processes 1M+ events/second using distributed queues at companies like Netflix and Uber. Bloomberg Terminal's real-time stock tick processing and printer spoolers are classic queue applications.",
+  "hashing": "SHA-256 powers Git commit integrity and SSL certificate chains securing all HTTPS websites. PostgreSQL hash indexes provide O(1) lookups, and HMAC-based API authentication (JWT) depends on cryptographic hashing.",
+  "binary-trees-bst": "Linux kernel's Completely Fair Scheduler (CFS) uses a red-black tree to pick the next process from thousands of tasks in O(log n) -- this code runs billions of times per day on every Android phone and cloud server.",
+  "avl-red-black": "Java's TreeMap, C++ std::map, and Linux's kernel memory allocator all use red-black trees. PostgreSQL's query planner relies on them for range-index lookups in multi-TB databases.",
+  "tries": "Google Search autocomplete processes 5B+ queries daily using a compressed trie for O(k) prefix matching. Elasticsearch uses tries for fuzzy search, and IP routing tables use compressed tries (PATRICIA trees) for longest prefix matching.",
+  "segment-trees": "Competitive programming platforms (Codeforces, AtCoder) feature range-query problems solved with segment trees. Stock market dashboards tracking daily min/max/avg prices use segment trees for real-time aggregations.",
+  "fenwick-trees": "Arithmetic coding in H.264/H.265 video compression uses Fenwick trees for cumulative frequency tables -- every Netflix and YouTube video you watch uses this data structure for efficient encoding.",
+  "heaps-priority-queues": "Uber's dynamic pricing matches 15M+ rides daily using min-heap priority queues to assign nearest drivers in sub-millisecond time. Dijkstra's algorithm for GPS navigation depends on a priority queue.",
+  "graphs-bfs-dfs": "LinkedIn's '2nd-degree connection' suggestions run BFS on a 930M+ user graph. GPS navigation systems run DFS/BFS on road-network graphs, and web crawlers (Googlebot) use BFS to discover pages.",
+  "union-find": "Kruskal's MST algorithm powers Amazon's delivery route optimization. Network administrators use union-find for dynamic connectivity in data center switch fabrics, and percolation models in materials science use union-find.",
+  "sorting-algorithms": "PostgreSQL's query planner sorts tuples with Timsort (Python/Java's hybrid merge+insertion). Google BigTable and LevelDB use merge sort for write-optimized storage, and every spreadsheet 'Sort A-Z' operation is a sort algorithm in production.",
+  "searching-algorithms": "The grep command powering IDE 'Find in Files' uses Boyer-Moore string search. Git bisect uses binary search to find broken commits across 100K+ histories -- splitting the search space in half each time.",
+  "graph-algorithms": "Google Maps calculates routes for 1B+ users using Dijkstra on continent-scale road graphs with contraction hierarchies, achieving O(log V) per query. Network routing protocols (OSPF, BGP) are graph algorithms running across the internet.",
+  "dynamic-programming": "Git diff and VS Code's 'Compare Files' feature use the Levenshtein distance DP matrix. Google Docs real-time collaborative editing uses DP edit-distance for operational transforms across thousands of concurrent users.",
+  "greedy-algorithms": "Huffman coding behind JPEG compression reduces file sizes by 40% -- every smartphone photo you take uses this. Dijkstra's algorithm itself is greedy, and cashier change-making algorithms in POS systems use greedy coin selection.",
+  "backtracking": "PostgreSQL's query optimizer explores join orders with backtracking -- a 12-table join has 479M possible orderings, pruned to O(n^3). Sudoku solvers, chess engines (minimax alpha-beta), and constraint SAT solvers all use backtracking.",
+  "string-algorithms": "Apache Lucene powers Elasticsearch full-text search across millions of documents using suffix arrays and tries. The Linux kernel's KMP implementation in /lib/string.c is invoked by grep, sed, and awk daily by every developer.",
+  "advanced-topics": "Google's PageRank uses network flow algorithms. Cryptocurrency mining pools use cover trees for nearest-neighbor lookup in high-dimensional hash spaces. Sparse table RMQ is used in bioinformatics for DNA sequence pattern matching.",
+  "core-patterns": "FAANG companies evaluate candidates on pattern recognition: Google asks 2-pointer/DP, Amazon asks BFS/DFS, Meta asks top-K heaps in 45-min interviews. Mastering these 14 patterns distinguishes an offer from a rejection.",
+  "mock-interview": "Interviewing.io's anonymous mock interviews show that candidates who practice timed, simulated sessions receive offers within 5 real interviews. The key metric is thinking-out-loud under pressure -- not just getting the right answer.",
+};
+
 const problemData: { topicSlug: string; title: string; difficulty: string; leetcodeUrl?: string; hackerrankUrl?: string; neetcodeUrl?: string }[] = [
   // Tier 0: Foundations
   { topicSlug: "big-o-complexity", title: "Two Sum", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/two-sum/", hackerrankUrl: "https://www.hackerrank.com/challenges/ctci-array-left-rotation/problem", neetcodeUrl: "https://neetcode.io/problems/two-sum" },
@@ -86,12 +117,53 @@ const problemData: { topicSlug: string; title: string; difficulty: string; leetc
   { topicSlug: "mock-interview", title: "Trapping Rain Water", difficulty: "Hard", leetcodeUrl: "https://leetcode.com/problems/trapping-rain-water/", hackerrankUrl: "https://www.hackerrank.com/challenges/trapping-rain-water/problem", neetcodeUrl: "https://neetcode.io/problems/trapping-rain-water" },
 ];
 
+async function syncUseCases() {
+  const topics = await prisma.topic.findMany({ select: { slug: true } });
+  let updated = 0;
+  for (const t of topics) {
+    const useCase = realWorldUseCases[t.slug];
+    if (useCase) {
+      await prisma.topic.updateMany({ where: { slug: t.slug }, data: { realWorldUseCase: useCase } });
+      updated++;
+    }
+  }
+  console.log(`Real-world use cases synced: ${updated} topics updated`);
+}
+
+async function syncProblems() {
+  const topicMap = new Map<string, string>();
+  const allTopics = await prisma.topic.findMany({ select: { id: true, slug: true } });
+  allTopics.forEach((t) => topicMap.set(t.slug, t.id));
+
+  let created = 0;
+  let updated = 0;
+  for (const p of problemData) {
+    const topicId = topicMap.get(p.topicSlug);
+    if (!topicId) continue;
+    const existing = await prisma.problem.findFirst({ where: { topicId, title: p.title } });
+    if (existing) {
+      if (p.hackerrankUrl) {
+        await prisma.problem.update({ where: { id: existing.id }, data: { hackerrankUrl: p.hackerrankUrl } });
+        updated++;
+      }
+    } else {
+      await prisma.problem.create({
+        data: { topicId, title: p.title, difficulty: p.difficulty, leetcodeUrl: p.leetcodeUrl, hackerrankUrl: p.hackerrankUrl, neetcodeUrl: p.neetcodeUrl },
+      });
+      created++;
+    }
+  }
+  console.log(`Problem sync: ${created} created, ${updated} updated`);
+}
+
 async function main() {
   console.log("Seeding database...");
 
+  await syncUseCases();
+
   const existingCourseCount = await prisma.course.count();
   if (existingCourseCount > 0) {
-    console.log("Courses already exist, skipping course/topic creation. Running problem sync only...");
+    console.log("Courses already exist, use cases updated. Running problem sync...");
     await syncProblems();
     return;
   }
@@ -107,13 +179,11 @@ async function main() {
       topics: {
         create: [
           {
-            title: "Big-O Complexity",
-            slug: "big-o-complexity",
-            order: 0,
-            visualizerType: "array",
+            title: "Big-O Complexity", slug: "big-o-complexity", order: 0, visualizerType: "array",
+            realWorldUseCase: realWorldUseCases["big-o-complexity"],
             theoryContent: `# Big-O Notation
 
-Big-O notation describes the **upper bound** of an algorithm's growth rate — how its runtime or space usage scales as the input size grows.
+Big-O notation describes the **upper bound** of an algorithm's growth rate -- how its runtime or space usage scales as the input size grows.
 
 ## Common Complexities
 
@@ -137,18 +207,16 @@ Drop constants and lower-order terms. Focus on how the algorithm **scales** as n
 - **O (Big-O):** Worst-case upper bound`,
           },
           {
-            title: "Recursion & Call Stack",
-            slug: "recursion-call-stack",
-            order: 1,
-            visualizerType: "array",
+            title: "Recursion & Call Stack", slug: "recursion-call-stack", order: 1, visualizerType: "array",
+            realWorldUseCase: realWorldUseCases["recursion-call-stack"],
             theoryContent: `# Recursion
 
 A function that calls itself with a smaller subproblem until reaching a **base case**.
 
 ## Structure
 
-1. **Base case** — stops the recursion
-2. **Recursive case** — calls itself with modified input
+1. **Base case** -- stops the recursion
+2. **Recursive case** -- calls itself with modified input
 
 ## Call Stack
 
@@ -172,10 +240,8 @@ factorial(5)
 - Too deep recursion → hit recursion limit`,
           },
           {
-            title: "Bit Manipulation",
-            slug: "bit-manipulation",
-            order: 2,
-            visualizerType: "array",
+            title: "Bit Manipulation", slug: "bit-manipulation", order: 2, visualizerType: "array",
+            realWorldUseCase: realWorldUseCases["bit-manipulation"],
             theoryContent: `# Bit Manipulation
 
 Direct operations on binary representations of integers.
@@ -185,7 +251,7 @@ Direct operations on binary representations of integers.
 | Operator | Symbol | Effect |
 |----------|--------|--------|
 | AND | & | 1 if both bits are 1 |
-| OR | \| | 1 if either bit is 1 |
+| OR | \\| | 1 if either bit is 1 |
 | XOR | ^ | 1 if bits differ |
 | NOT | ~ | Flips all bits |
 | Left Shift | << | Multiply by 2^k |
@@ -204,10 +270,8 @@ Direct operations on binary representations of integers.
 \`a ^ a = 0\` and \`a ^ 0 = a\`. Use XOR to find the single number in an array where every other number appears twice.`,
           },
           {
-            title: "Modular Math",
-            slug: "modular-math",
-            order: 3,
-            visualizerType: "array",
+            title: "Modular Math", slug: "modular-math", order: 3, visualizerType: "array",
+            realWorldUseCase: realWorldUseCases["modular-math"],
             theoryContent: `# Modular Arithmetic
 
 Working with remainders. Essential for cryptography, hashing, and avoiding integer overflow.
@@ -238,10 +302,8 @@ function modPow(a, b, m):
 \`a^(-1) mod m\` exists iff gcd(a, m) = 1. Use Extended Euclidean Algorithm.`,
           },
           {
-            title: "Memory Model",
-            slug: "memory-model",
-            order: 4,
-            visualizerType: "array",
+            title: "Memory Model", slug: "memory-model", order: 4, visualizerType: "array",
+            realWorldUseCase: realWorldUseCases["memory-model"],
             theoryContent: `# Stack vs Heap
 
 Understanding where your data lives is crucial for performance and avoiding bugs.
@@ -282,13 +344,11 @@ Understanding where your data lives is crucial for performance and avoiding bugs
       topics: {
         create: [
           {
-            title: "Arrays & Strings",
-            slug: "arrays-strings",
-            order: 0,
-            visualizerType: "array",
+            title: "Arrays & Strings", slug: "arrays-strings", order: 0, visualizerType: "array",
+            realWorldUseCase: realWorldUseCases["arrays-strings"],
             theoryContent: `# Arrays & Strings
 
-The most fundamental data structure — a contiguous block of memory storing elements of the same type.
+The most fundamental data structure -- a contiguous block of memory storing elements of the same type.
 
 ## Key Properties
 - **O(1)** access by index
@@ -314,10 +374,8 @@ Use two indices (often at ends or different speeds) to solve problems in O(n):
 - Container with most water`,
           },
           {
-            title: "Linked Lists",
-            slug: "linked-lists",
-            order: 1,
-            visualizerType: "linked-list",
+            title: "Linked Lists", slug: "linked-lists", order: 1, visualizerType: "linked-list",
+            realWorldUseCase: realWorldUseCases["linked-lists"],
             theoryContent: `# Linked Lists
 
 A sequence of nodes where each node points to the next. Unlike arrays, elements are **not** contiguous in memory.
@@ -345,19 +403,17 @@ A sequence of nodes where each node points to the next. Unlike arrays, elements 
 - Reverse in-place with three pointers`,
           },
           {
-            title: "Stacks",
-            slug: "stacks",
-            order: 2,
-            visualizerType: "array",
+            title: "Stacks", slug: "stacks", order: 2, visualizerType: "array",
+            realWorldUseCase: realWorldUseCases["stacks"],
             theoryContent: `# Stacks
 
 LIFO (Last In, First Out) data structure. Think of a stack of plates.
 
 ## Core Operations
-- **push(x):** Add to top — O(1)
-- **pop():** Remove from top — O(1)
-- **peek():** View top without removing — O(1)
-- **isEmpty():** Check if empty — O(1)
+- **push(x):** Add to top -- O(1)
+- **pop():** Remove from top -- O(1)
+- **peek():** View top without removing -- O(1)
+- **isEmpty():** Check if empty -- O(1)
 
 ## Applications
 - Function call stack
@@ -382,19 +438,17 @@ for each element:
 Trick: traverse from right to left, maintain decreasing stack.`,
           },
           {
-            title: "Queues",
-            slug: "queues",
-            order: 3,
-            visualizerType: "linked-list",
+            title: "Queues", slug: "queues", order: 3, visualizerType: "linked-list",
+            realWorldUseCase: realWorldUseCases["queues"],
             theoryContent: `# Queues
 
 FIFO (First In, First Out) data structure. Think of a line at a ticket counter.
 
 ## Core Operations
-- **enqueue(x):** Add to rear — O(1)
-- **dequeue():** Remove from front — O(1)
-- **peek():** View front — O(1)
-- **isEmpty():** Check if empty — O(1)
+- **enqueue(x):** Add to rear -- O(1)
+- **dequeue():** Remove from front -- O(1)
+- **peek():** View front -- O(1)
+- **isEmpty():** Check if empty -- O(1)
 
 ## Variants
 
@@ -414,10 +468,8 @@ Elements have priority; highest priority dequeued first. Typically implemented w
 - CPU process scheduling`,
           },
           {
-            title: "Hashing",
-            slug: "hashing",
-            order: 4,
-            visualizerType: "array",
+            title: "Hashing", slug: "hashing", order: 4, visualizerType: "array",
+            realWorldUseCase: realWorldUseCases["hashing"],
             theoryContent: `# Hashing
 
 Map keys to values using a hash function for O(1) average lookup, insert, and delete.
@@ -462,14 +514,14 @@ All entries stored in the table itself. On collision, probe for next empty slot.
       tier: 2, title: "Non-Linear Structures", slug: "non-linear-structures", isPaid: true, order: 2,
       topics: {
         create: [
-          { title: "Binary Trees & BST", slug: "binary-trees-bst", order: 0, visualizerType: "bst", theoryContent: "# Binary Trees\n\nHierarchical data structure where each node has at most 2 children." },
-          { title: "AVL & Red-Black Trees", slug: "avl-red-black", order: 1, visualizerType: "bst", theoryContent: "# Self-Balancing Trees\n\nAVL and Red-Black trees maintain O(log n) height through rotations." },
-          { title: "Tries", slug: "tries", order: 2, visualizerType: "bst", theoryContent: "# Trie (Prefix Tree)\n\nEfficient retrieval tree for string keys. Each node represents a character." },
-          { title: "Segment Trees", slug: "segment-trees", order: 3, visualizerType: "array", theoryContent: "# Segment Trees\n\nRange query data structure. O(log n) for point updates and range queries." },
-          { title: "Fenwick Trees (BIT)", slug: "fenwick-trees", order: 4, visualizerType: "array", theoryContent: "# Fenwick Tree (Binary Indexed Tree)\n\nCompact range-sum query structure. Uses bit magic for O(log n)." },
-          { title: "Heaps & Priority Queues", slug: "heaps-priority-queues", order: 5, visualizerType: "bst", theoryContent: "# Heaps\n\nComplete binary tree with heap property. Min-heap or max-heap." },
-          { title: "Graphs: BFS & DFS", slug: "graphs-bfs-dfs", order: 6, visualizerType: "graph", theoryContent: "# Graph Traversal\n\nBFS uses queue, DFS uses stack/recursion. Both O(V+E)." },
-          { title: "Union-Find", slug: "union-find", order: 7, visualizerType: "array", theoryContent: "# Union-Find (Disjoint Set)\n\nTrack connected components. Path compression + union by rank." },
+          { title: "Binary Trees & BST", slug: "binary-trees-bst", order: 0, visualizerType: "bst", realWorldUseCase: realWorldUseCases["binary-trees-bst"], theoryContent: "# Binary Trees\n\nHierarchical data structure where each node has at most 2 children." },
+          { title: "AVL & Red-Black Trees", slug: "avl-red-black", order: 1, visualizerType: "bst", realWorldUseCase: realWorldUseCases["avl-red-black"], theoryContent: "# Self-Balancing Trees\n\nAVL and Red-Black trees maintain O(log n) height through rotations." },
+          { title: "Tries", slug: "tries", order: 2, visualizerType: "bst", realWorldUseCase: realWorldUseCases["tries"], theoryContent: "# Trie (Prefix Tree)\n\nEfficient retrieval tree for string keys. Each node represents a character." },
+          { title: "Segment Trees", slug: "segment-trees", order: 3, visualizerType: "array", realWorldUseCase: realWorldUseCases["segment-trees"], theoryContent: "# Segment Trees\n\nRange query data structure. O(log n) for point updates and range queries." },
+          { title: "Fenwick Trees (BIT)", slug: "fenwick-trees", order: 4, visualizerType: "array", realWorldUseCase: realWorldUseCases["fenwick-trees"], theoryContent: "# Fenwick Tree (Binary Indexed Tree)\n\nCompact range-sum query structure. Uses bit magic for O(log n)." },
+          { title: "Heaps & Priority Queues", slug: "heaps-priority-queues", order: 5, visualizerType: "bst", realWorldUseCase: realWorldUseCases["heaps-priority-queues"], theoryContent: "# Heaps\n\nComplete binary tree with heap property. Min-heap or max-heap." },
+          { title: "Graphs: BFS & DFS", slug: "graphs-bfs-dfs", order: 6, visualizerType: "graph", realWorldUseCase: realWorldUseCases["graphs-bfs-dfs"], theoryContent: "# Graph Traversal\n\nBFS uses queue, DFS uses stack/recursion. Both O(V+E)." },
+          { title: "Union-Find", slug: "union-find", order: 7, visualizerType: "array", realWorldUseCase: realWorldUseCases["union-find"], theoryContent: "# Union-Find (Disjoint Set)\n\nTrack connected components. Path compression + union by rank." },
         ],
       },
     },
@@ -481,14 +533,14 @@ All entries stored in the table itself. On collision, probe for next empty slot.
       tier: 3, title: "Algorithms & Patterns", slug: "algorithms-patterns", isPaid: true, order: 3,
       topics: {
         create: [
-          { title: "Sorting Algorithms", slug: "sorting-algorithms", order: 0, visualizerType: "sorting", theoryContent: "# Sorting\n\nBubble, Selection, Insertion, Merge, Quick, Heap, Counting, Radix sort." },
-          { title: "Searching Algorithms", slug: "searching-algorithms", order: 1, visualizerType: "array", theoryContent: "# Searching\n\nLinear, Binary, Ternary, Exponential search." },
-          { title: "Graph Algorithms", slug: "graph-algorithms", order: 2, visualizerType: "graph", theoryContent: "# Graph Algorithms\n\nDijkstra, Bellman-Ford, Floyd-Warshall, Prim, Kruskal, A*." },
-          { title: "Dynamic Programming", slug: "dynamic-programming", order: 3, visualizerType: "array", theoryContent: "# Dynamic Programming\n\n1D/2D DP, knapsack family, LIS/LCS, DP on trees." },
-          { title: "Greedy Algorithms", slug: "greedy-algorithms", order: 4, visualizerType: "array", theoryContent: "# Greedy\n\nInterval scheduling, Huffman coding, fractional knapsack." },
-          { title: "Backtracking", slug: "backtracking", order: 5, visualizerType: "bst", theoryContent: "# Backtracking\n\nN-Queens, Sudoku, subsets, permutations. Pruning the search tree." },
-          { title: "String Algorithms", slug: "string-algorithms", order: 6, visualizerType: "array", theoryContent: "# String Algorithms\n\nKMP, Rabin-Karp, Z-algorithm, Manacher's algorithm." },
-          { title: "Advanced Topics", slug: "advanced-topics", order: 7, visualizerType: "array", theoryContent: "# Advanced Topics\n\nBit DP, Sparse Tables, LCA, Network Flow." },
+          { title: "Sorting Algorithms", slug: "sorting-algorithms", order: 0, visualizerType: "sorting", realWorldUseCase: realWorldUseCases["sorting-algorithms"], theoryContent: "# Sorting\n\nBubble, Selection, Insertion, Merge, Quick, Heap, Counting, Radix sort." },
+          { title: "Searching Algorithms", slug: "searching-algorithms", order: 1, visualizerType: "array", realWorldUseCase: realWorldUseCases["searching-algorithms"], theoryContent: "# Searching\n\nLinear, Binary, Ternary, Exponential search." },
+          { title: "Graph Algorithms", slug: "graph-algorithms", order: 2, visualizerType: "graph", realWorldUseCase: realWorldUseCases["graph-algorithms"], theoryContent: "# Graph Algorithms\n\nDijkstra, Bellman-Ford, Floyd-Warshall, Prim, Kruskal, A*." },
+          { title: "Dynamic Programming", slug: "dynamic-programming", order: 3, visualizerType: "array", realWorldUseCase: realWorldUseCases["dynamic-programming"], theoryContent: "# Dynamic Programming\n\n1D/2D DP, knapsack family, LIS/LCS, DP on trees." },
+          { title: "Greedy Algorithms", slug: "greedy-algorithms", order: 4, visualizerType: "array", realWorldUseCase: realWorldUseCases["greedy-algorithms"], theoryContent: "# Greedy\n\nInterval scheduling, Huffman coding, fractional knapsack." },
+          { title: "Backtracking", slug: "backtracking", order: 5, visualizerType: "bst", realWorldUseCase: realWorldUseCases["backtracking"], theoryContent: "# Backtracking\n\nN-Queens, Sudoku, subsets, permutations. Pruning the search tree." },
+          { title: "String Algorithms", slug: "string-algorithms", order: 6, visualizerType: "array", realWorldUseCase: realWorldUseCases["string-algorithms"], theoryContent: "# String Algorithms\n\nKMP, Rabin-Karp, Z-algorithm, Manacher's algorithm." },
+          { title: "Advanced Topics", slug: "advanced-topics", order: 7, visualizerType: "array", realWorldUseCase: realWorldUseCases["advanced-topics"], theoryContent: "# Advanced Topics\n\nBit DP, Sparse Tables, LCA, Network Flow." },
         ],
       },
     },
@@ -500,61 +552,16 @@ All entries stored in the table itself. On collision, probe for next empty slot.
       tier: 4, title: "Interview Mastery", slug: "interview-mastery", isPaid: true, order: 4,
       topics: {
         create: [
-          { title: "14 Core Patterns", slug: "core-patterns", order: 0, visualizerType: "array", theoryContent: "# 14 Core Interview Patterns\n\nSliding window, two pointers, fast/slow pointers, merge intervals, cyclic sort, in-place reversal, tree BFS/DFS, top-K, K-way merge, subsets, modified binary search, XOR, backtracking, DP, topological sort, monotonic stack." },
-          { title: "Mock Interview Mode", slug: "mock-interview", order: 1, visualizerType: "array", theoryContent: "# Mock Interview Mode\n\nTimed sessions with progressively revealed hints." },
+          { title: "14 Core Patterns", slug: "core-patterns", order: 0, visualizerType: "array", realWorldUseCase: realWorldUseCases["core-patterns"], theoryContent: "# 14 Core Interview Patterns\n\nSliding window, two pointers, fast/slow pointers, merge intervals, cyclic sort, in-place reversal, tree BFS/DFS, top-K, K-way merge, subsets, modified binary search, XOR, backtracking, DP, topological sort, monotonic stack." },
+          { title: "Mock Interview Mode", slug: "mock-interview", order: 1, visualizerType: "array", realWorldUseCase: realWorldUseCases["mock-interview"], theoryContent: "# Mock Interview Mode\n\nTimed sessions with progressively revealed hints." },
         ],
       },
     },
   });
 
   // ── Problems ──
-  const topicMap = new Map<string, string>();
-  const allTopics = await prisma.topic.findMany({ select: { id: true, slug: true } });
-  allTopics.forEach((t) => topicMap.set(t.slug, t.id));
-
-  for (const p of problemData) {
-    const topicId = topicMap.get(p.topicSlug);
-    if (!topicId) continue;
-    const existing = await prisma.problem.findFirst({ where: { topicId, title: p.title } });
-    if (existing) {
-      if (p.hackerrankUrl) {
-        await prisma.problem.update({ where: { id: existing.id }, data: { hackerrankUrl: p.hackerrankUrl } });
-      }
-    } else {
-      await prisma.problem.create({
-        data: { topicId, title: p.title, difficulty: p.difficulty, leetcodeUrl: p.leetcodeUrl, hackerrankUrl: p.hackerrankUrl, neetcodeUrl: p.neetcodeUrl },
-      });
-    }
-  }
-
-  console.log(`Synced ${problemData.length} problems across all topics`);
+  await syncProblems();
   console.log("Seed complete!");
-}
-
-async function syncProblems() {
-  const topicMap = new Map<string, string>();
-  const allTopics = await prisma.topic.findMany({ select: { id: true, slug: true } });
-  allTopics.forEach((t) => topicMap.set(t.slug, t.id));
-
-  let created = 0;
-  let updated = 0;
-  for (const p of problemData) {
-    const topicId = topicMap.get(p.topicSlug);
-    if (!topicId) continue;
-    const existing = await prisma.problem.findFirst({ where: { topicId, title: p.title } });
-    if (existing) {
-      if (p.hackerrankUrl) {
-        await prisma.problem.update({ where: { id: existing.id }, data: { hackerrankUrl: p.hackerrankUrl } });
-        updated++;
-      }
-    } else {
-      await prisma.problem.create({
-        data: { topicId, title: p.title, difficulty: p.difficulty, leetcodeUrl: p.leetcodeUrl, hackerrankUrl: p.hackerrankUrl, neetcodeUrl: p.neetcodeUrl },
-      });
-      created++;
-    }
-  }
-  console.log(`Problem sync: ${created} created, ${updated} updated`);
 }
 
 main()
