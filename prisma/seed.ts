@@ -6,8 +6,95 @@ const dbUrl = process.env.DATABASE_URL ?? "file:./dev.db";
 const adapter = new PrismaLibSql({ url: dbUrl });
 const prisma = new PrismaClient({ adapter } as never);
 
+const problemData: { topicSlug: string; title: string; difficulty: string; leetcodeUrl?: string; hackerrankUrl?: string; neetcodeUrl?: string }[] = [
+  // Tier 0: Foundations
+  { topicSlug: "big-o-complexity", title: "Two Sum", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/two-sum/", hackerrankUrl: "https://www.hackerrank.com/challenges/ctci-array-left-rotation/problem", neetcodeUrl: "https://neetcode.io/problems/two-sum" },
+  { topicSlug: "big-o-complexity", title: "Contains Duplicate", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/contains-duplicate/", hackerrankUrl: "https://www.hackerrank.com/challenges/sock-merchant/problem", neetcodeUrl: "https://neetcode.io/problems/contains-duplicate" },
+  { topicSlug: "big-o-complexity", title: "First Bad Version", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/first-bad-version/", hackerrankUrl: "https://www.hackerrank.com/challenges/30-binary-search/problem" },
+  { topicSlug: "recursion-call-stack", title: "Fibonacci Number", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/fibonacci-number/", hackerrankUrl: "https://www.hackerrank.com/challenges/ctci-fibonacci-numbers/problem" },
+  { topicSlug: "recursion-call-stack", title: "Climbing Stairs", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/climbing-stairs/", hackerrankUrl: "https://www.hackerrank.com/challenges/ctci-recursive-staircase/problem", neetcodeUrl: "https://neetcode.io/problems/climbing-stairs" },
+  { topicSlug: "bit-manipulation", title: "Single Number", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/single-number/", hackerrankUrl: "https://www.hackerrank.com/challenges/lonely-integer/problem", neetcodeUrl: "https://neetcode.io/problems/single-number" },
+  { topicSlug: "bit-manipulation", title: "Number of 1 Bits", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/number-of-1-bits/", hackerrankUrl: "https://www.hackerrank.com/challenges/30-binary-numbers/problem" },
+  { topicSlug: "bit-manipulation", title: "Counting Bits", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/counting-bits/", hackerrankUrl: "https://www.hackerrank.com/challenges/2d-array/problem" },
+  { topicSlug: "modular-math", title: "Pow(x, n)", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/powx-n/", hackerrankUrl: "https://www.hackerrank.com/challenges/python-power-mod-power/problem" },
+  { topicSlug: "modular-math", title: "Add Strings", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/add-strings/", hackerrankUrl: "https://www.hackerrank.com/challenges/30-recursion/problem" },
+  { topicSlug: "memory-model", title: "Reverse Linked List", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/reverse-linked-list/", hackerrankUrl: "https://www.hackerrank.com/challenges/reverse-a-linked-list/problem", neetcodeUrl: "https://neetcode.io/problems/reverse-linked-list" },
+  { topicSlug: "memory-model", title: "Middle of Linked List", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/middle-of-the-linked-list/", hackerrankUrl: "https://www.hackerrank.com/challenges/insert-a-node-at-the-head-of-a-linked-list/problem" },
+  // Tier 1: Linear Structures
+  { topicSlug: "arrays-strings", title: "Maximum Subarray", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/maximum-subarray/", hackerrankUrl: "https://www.hackerrank.com/challenges/maxsubarray/problem", neetcodeUrl: "https://neetcode.io/problems/maximum-subarray" },
+  { topicSlug: "arrays-strings", title: "Product of Array Except Self", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/product-of-array-except-self/", hackerrankUrl: "https://www.hackerrank.com/challenges/arrays-ds/problem", neetcodeUrl: "https://neetcode.io/problems/product-of-array-except-self" },
+  { topicSlug: "arrays-strings", title: "Valid Palindrome", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/valid-palindrome/", hackerrankUrl: "https://www.hackerrank.com/challenges/palindrome-index/problem", neetcodeUrl: "https://neetcode.io/problems/valid-palindrome" },
+  { topicSlug: "arrays-strings", title: "3Sum", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/3sum/", hackerrankUrl: "https://www.hackerrank.com/challenges/three-month-preparation-week4-3d-surface-area/problem", neetcodeUrl: "https://neetcode.io/problems/3sum" },
+  { topicSlug: "linked-lists", title: "Merge Two Sorted Lists", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/merge-two-sorted-lists/", hackerrankUrl: "https://www.hackerrank.com/challenges/merge-two-sorted-linked-lists/problem", neetcodeUrl: "https://neetcode.io/problems/merge-two-sorted-lists" },
+  { topicSlug: "linked-lists", title: "Linked List Cycle", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/linked-list-cycle/", hackerrankUrl: "https://www.hackerrank.com/challenges/detect-whether-a-linked-list-contains-a-cycle/problem", neetcodeUrl: "https://neetcode.io/problems/linked-list-cycle" },
+  { topicSlug: "linked-lists", title: "Remove Nth Node From End", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/remove-nth-node-from-end-of-list/", hackerrankUrl: "https://www.hackerrank.com/challenges/insert-a-node-at-a-specific-position-in-a-linked-list/problem" },
+  { topicSlug: "stacks", title: "Valid Parentheses", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/valid-parentheses/", hackerrankUrl: "https://www.hackerrank.com/challenges/balanced-brackets/problem", neetcodeUrl: "https://neetcode.io/problems/valid-parentheses" },
+  { topicSlug: "stacks", title: "Min Stack", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/min-stack/", hackerrankUrl: "https://www.hackerrank.com/challenges/maximum-element/problem", neetcodeUrl: "https://neetcode.io/problems/min-stack" },
+  { topicSlug: "stacks", title: "Daily Temperatures", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/daily-temperatures/", hackerrankUrl: "https://www.hackerrank.com/challenges/poisonous-plants/problem", neetcodeUrl: "https://neetcode.io/problems/daily-temperatures" },
+  { topicSlug: "queues", title: "Implement Queue using Stacks", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/implement-queue-using-stacks/", hackerrankUrl: "https://www.hackerrank.com/challenges/queue-using-two-stacks/problem" },
+  { topicSlug: "queues", title: "Sliding Window Maximum", difficulty: "Hard", leetcodeUrl: "https://leetcode.com/problems/sliding-window-maximum/", hackerrankUrl: "https://www.hackerrank.com/challenges/queries-with-fixed-length/problem", neetcodeUrl: "https://neetcode.io/problems/sliding-window-maximum" },
+  { topicSlug: "hashing", title: "Group Anagrams", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/group-anagrams/", hackerrankUrl: "https://www.hackerrank.com/challenges/sherlock-and-anagrams/problem", neetcodeUrl: "https://neetcode.io/problems/group-anagrams" },
+  { topicSlug: "hashing", title: "Top K Frequent Elements", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/top-k-frequent-elements/", hackerrankUrl: "https://www.hackerrank.com/challenges/migratory-birds/problem", neetcodeUrl: "https://neetcode.io/problems/top-k-frequent-elements" },
+  { topicSlug: "hashing", title: "Subarray Sum Equals K", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/subarray-sum-equals-k/", hackerrankUrl: "https://www.hackerrank.com/challenges/minimum-swaps-2/problem" },
+  // Tier 2: Non-Linear Structures
+  { topicSlug: "binary-trees-bst", title: "Lowest Common Ancestor", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-search-tree/", hackerrankUrl: "https://www.hackerrank.com/challenges/binary-search-tree-lowest-common-ancestor/problem", neetcodeUrl: "https://neetcode.io/problems/lowest-common-ancestor-of-a-bst" },
+  { topicSlug: "binary-trees-bst", title: "Validate BST", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/validate-binary-search-tree/", hackerrankUrl: "https://www.hackerrank.com/challenges/is-binary-search-tree/problem", neetcodeUrl: "https://neetcode.io/problems/validate-bst" },
+  { topicSlug: "binary-trees-bst", title: "Binary Tree Level Order", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/binary-tree-level-order-traversal/", hackerrankUrl: "https://www.hackerrank.com/challenges/tree-level-order-traversal/problem" },
+  { topicSlug: "avl-red-black", title: "Self Balancing Tree", difficulty: "Medium", hackerrankUrl: "https://www.hackerrank.com/challenges/self-balancing-tree/problem" },
+  { topicSlug: "avl-red-black", title: "Tree: Height of a Binary Tree", difficulty: "Easy", hackerrankUrl: "https://www.hackerrank.com/challenges/tree-height-of-a-binary-tree/problem" },
+  { topicSlug: "avl-red-black", title: "Balanced Binary Tree", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/balanced-binary-tree/", hackerrankUrl: "https://www.hackerrank.com/challenges/tree-height-of-a-binary-tree/problem" },
+  { topicSlug: "tries", title: "Implement Trie", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/implement-trie-prefix-tree/", hackerrankUrl: "https://www.hackerrank.com/challenges/contacts/problem", neetcodeUrl: "https://neetcode.io/problems/implement-trie" },
+  { topicSlug: "tries", title: "Design Add and Search Words", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/design-add-and-search-words-data-structure/", hackerrankUrl: "https://www.hackerrank.com/challenges/no-prefix-set/problem" },
+  { topicSlug: "segment-trees", title: "Range Sum Query - Mutable", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/range-sum-query-mutable/", hackerrankUrl: "https://www.hackerrank.com/challenges/maximum-subarray-sum/problem" },
+  { topicSlug: "segment-trees", title: "Range Minimum Query", difficulty: "Medium", hackerrankUrl: "https://www.hackerrank.com/challenges/service-lane/problem" },
+  { topicSlug: "segment-trees", title: "Count of Smaller Numbers After Self", difficulty: "Hard", leetcodeUrl: "https://leetcode.com/problems/count-of-smaller-numbers-after-self/" },
+  { topicSlug: "fenwick-trees", title: "Range Sum Query - Mutable (Fenwick)", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/range-sum-query-mutable/", hackerrankUrl: "https://www.hackerrank.com/challenges/insertionsort1/problem" },
+  { topicSlug: "fenwick-trees", title: "Count Inversions", difficulty: "Hard", leetcodeUrl: "https://leetcode.com/problems/count-of-smaller-numbers-after-self/" },
+  { topicSlug: "fenwick-trees", title: "Number of Recent Calls", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/number-of-recent-calls/" },
+  { topicSlug: "heaps-priority-queues", title: "Kth Largest Element", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/kth-largest-element-in-an-array/", hackerrankUrl: "https://www.hackerrank.com/challenges/find-the-running-median/problem", neetcodeUrl: "https://neetcode.io/problems/kth-largest-element" },
+  { topicSlug: "heaps-priority-queues", title: "Merge K Sorted Lists", difficulty: "Hard", leetcodeUrl: "https://leetcode.com/problems/merge-k-sorted-lists/", hackerrankUrl: "https://www.hackerrank.com/challenges/jesse-and-cookies/problem", neetcodeUrl: "https://neetcode.io/problems/merge-k-sorted-lists" },
+  { topicSlug: "graphs-bfs-dfs", title: "Number of Islands", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/number-of-islands/", hackerrankUrl: "https://www.hackerrank.com/challenges/connected-cell-in-a-grid/problem", neetcodeUrl: "https://neetcode.io/problems/number-of-islands" },
+  { topicSlug: "graphs-bfs-dfs", title: "Clone Graph", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/clone-graph/", hackerrankUrl: "https://www.hackerrank.com/challenges/torque-and-development/problem", neetcodeUrl: "https://neetcode.io/problems/clone-graph" },
+  { topicSlug: "union-find", title: "Number of Connected Components", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/number-of-connected-components-in-an-undirected-graph/", hackerrankUrl: "https://www.hackerrank.com/challenges/components-in-graph/problem", neetcodeUrl: "https://neetcode.io/problems/connected-components" },
+  // Tier 3: Algorithms & Patterns
+  { topicSlug: "sorting-algorithms", title: "Sort an Array", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/sort-an-array/", hackerrankUrl: "https://www.hackerrank.com/challenges/big-sorting/problem" },
+  { topicSlug: "sorting-algorithms", title: "Sort Colors", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/sort-colors/", hackerrankUrl: "https://www.hackerrank.com/challenges/countingsort2/problem" },
+  { topicSlug: "searching-algorithms", title: "Binary Search", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/binary-search/", hackerrankUrl: "https://www.hackerrank.com/challenges/ctci-ice-cream-parlor/problem" },
+  { topicSlug: "searching-algorithms", title: "Search in Rotated Sorted Array", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/search-in-rotated-sorted-array/", hackerrankUrl: "https://www.hackerrank.com/challenges/pairs/problem" },
+  { topicSlug: "searching-algorithms", title: "Find Minimum in Rotated Sorted Array", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/find-minimum-in-rotated-sorted-array/", hackerrankUrl: "https://www.hackerrank.com/challenges/minimum-loss/problem" },
+  { topicSlug: "graph-algorithms", title: "Network Delay Time", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/network-delay-time/", hackerrankUrl: "https://www.hackerrank.com/challenges/dijkstrashortreach/problem", neetcodeUrl: "https://neetcode.io/problems/network-delay-time" },
+  { topicSlug: "graph-algorithms", title: "Cheapest Flights Within K Stops", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/cheapest-flights-within-k-stops/", hackerrankUrl: "https://www.hackerrank.com/challenges/primsmstsub/problem", neetcodeUrl: "https://neetcode.io/problems/cheapest-flights" },
+  { topicSlug: "dynamic-programming", title: "House Robber", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/house-robber/", hackerrankUrl: "https://www.hackerrank.com/challenges/max-array-sum/problem", neetcodeUrl: "https://neetcode.io/problems/house-robber" },
+  { topicSlug: "dynamic-programming", title: "Longest Increasing Subsequence", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/longest-increasing-subsequence/", hackerrankUrl: "https://www.hackerrank.com/challenges/longest-increasing-subsequent/problem", neetcodeUrl: "https://neetcode.io/problems/longest-increasing-subsequence" },
+  { topicSlug: "dynamic-programming", title: "Coin Change", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/coin-change/", hackerrankUrl: "https://www.hackerrank.com/challenges/coin-change/problem", neetcodeUrl: "https://neetcode.io/problems/coin-change" },
+  { topicSlug: "greedy-algorithms", title: "Maximum Units on a Truck", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/maximum-units-on-a-truck/", hackerrankUrl: "https://www.hackerrank.com/challenges/greedy-florist/problem" },
+  { topicSlug: "greedy-algorithms", title: "Jump Game", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/jump-game/", hackerrankUrl: "https://www.hackerrank.com/challenges/angry-children/problem" },
+  { topicSlug: "greedy-algorithms", title: "Gas Station", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/gas-station/", hackerrankUrl: "https://www.hackerrank.com/challenges/truck-tour/problem" },
+  { topicSlug: "backtracking", title: "N-Queens", difficulty: "Hard", leetcodeUrl: "https://leetcode.com/problems/n-queens/", hackerrankUrl: "https://www.hackerrank.com/challenges/n-queens-problem/problem", neetcodeUrl: "https://neetcode.io/problems/n-queens" },
+  { topicSlug: "backtracking", title: "Subsets", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/subsets/", hackerrankUrl: "https://www.hackerrank.com/challenges/non-divisible-subset/problem", neetcodeUrl: "https://neetcode.io/problems/subsets" },
+  { topicSlug: "string-algorithms", title: "Find the Index of the First Occurrence", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/find-the-index-of-the-first-occurrence-in-a-string/", hackerrankUrl: "https://www.hackerrank.com/challenges/string-similarity/problem" },
+  { topicSlug: "string-algorithms", title: "Longest Palindromic Substring", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/longest-palindromic-substring/", hackerrankUrl: "https://www.hackerrank.com/challenges/palindrome-index/problem", neetcodeUrl: "https://neetcode.io/problems/longest-palindromic-substring" },
+  { topicSlug: "advanced-topics", title: "Sparse Table RMQ", difficulty: "Hard", leetcodeUrl: "https://leetcode.com/problems/range-sum-query-immutable/", hackerrankUrl: "https://www.hackerrank.com/challenges/service-lane/problem" },
+  { topicSlug: "advanced-topics", title: "Kth Ancestor of a Tree Node", difficulty: "Hard", leetcodeUrl: "https://leetcode.com/problems/kth-ancestor-of-a-tree-node/", hackerrankUrl: "https://www.hackerrank.com/challenges/binary-search-tree-lowest-common-ancestor/problem" },
+  { topicSlug: "advanced-topics", title: "Maximum Flow (Dinic)", difficulty: "Hard", hackerrankUrl: "https://www.hackerrank.com/challenges/unbounded-knapsack/problem" },
+  // Tier 4: Interview Mastery
+  { topicSlug: "core-patterns", title: "Merge Intervals", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/merge-intervals/", hackerrankUrl: "https://www.hackerrank.com/challenges/mark-and-toys/problem", neetcodeUrl: "https://neetcode.io/problems/merge-intervals" },
+  { topicSlug: "core-patterns", title: "Find All Duplicates", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/find-all-duplicates-in-an-array/", hackerrankUrl: "https://www.hackerrank.com/challenges/find-duplicates-in-array/problem" },
+  { topicSlug: "core-patterns", title: "Course Schedule", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/course-schedule/", hackerrankUrl: "https://www.hackerrank.com/challenges/topological-sort/problem", neetcodeUrl: "https://neetcode.io/problems/course-schedule" },
+  { topicSlug: "core-patterns", title: "Word Search", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/word-search/", hackerrankUrl: "https://www.hackerrank.com/challenges/crossword-puzzle/problem", neetcodeUrl: "https://neetcode.io/problems/word-search" },
+  { topicSlug: "mock-interview", title: "LRU Cache", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/lru-cache/", hackerrankUrl: "https://www.hackerrank.com/challenges/java-collections/problem", neetcodeUrl: "https://neetcode.io/problems/lru-cache" },
+  { topicSlug: "mock-interview", title: "Trapping Rain Water", difficulty: "Hard", leetcodeUrl: "https://leetcode.com/problems/trapping-rain-water/", hackerrankUrl: "https://www.hackerrank.com/challenges/trapping-rain-water/problem", neetcodeUrl: "https://neetcode.io/problems/trapping-rain-water" },
+];
+
 async function main() {
   console.log("Seeding database...");
+
+  const existingCourseCount = await prisma.course.count();
+  if (existingCourseCount > 0) {
+    console.log("Courses already exist, skipping course/topic creation. Running problem sync only...");
+    await syncProblems();
+    return;
+  }
 
   // ── Tier 0: Foundations ──
   const foundations = await prisma.course.create({
@@ -421,86 +508,53 @@ All entries stored in the table itself. On collision, probe for next empty slot.
   });
 
   // ── Problems ──
-  const problemData: { topicSlug: string; title: string; difficulty: string; leetcodeUrl?: string; hackerrankUrl?: string; neetcodeUrl?: string }[] = [
-    // Tier 0
-    { topicSlug: "big-o-complexity", title: "Two Sum", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/two-sum/", neetcodeUrl: "https://neetcode.io/problems/two-sum" },
-    { topicSlug: "big-o-complexity", title: "Contains Duplicate", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/contains-duplicate/", neetcodeUrl: "https://neetcode.io/problems/contains-duplicate" },
-    { topicSlug: "big-o-complexity", title: "First Bad Version", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/first-bad-version/" },
-    { topicSlug: "recursion-call-stack", title: "Fibonacci Number", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/fibonacci-number/" },
-    { topicSlug: "recursion-call-stack", title: "Climbing Stairs", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/climbing-stairs/", neetcodeUrl: "https://neetcode.io/problems/climbing-stairs" },
-    { topicSlug: "bit-manipulation", title: "Single Number", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/single-number/", neetcodeUrl: "https://neetcode.io/problems/single-number" },
-    { topicSlug: "bit-manipulation", title: "Number of 1 Bits", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/number-of-1-bits/" },
-    { topicSlug: "modular-math", title: "Pow(x, n)", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/powx-n/" },
-    { topicSlug: "modular-math", title: "Add Strings", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/add-strings/" },
-    { topicSlug: "memory-model", title: "Reverse Linked List", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/reverse-linked-list/", neetcodeUrl: "https://neetcode.io/problems/reverse-linked-list" },
-    // Tier 1
-    { topicSlug: "arrays-strings", title: "Maximum Subarray", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/maximum-subarray/", neetcodeUrl: "https://neetcode.io/problems/maximum-subarray" },
-    { topicSlug: "arrays-strings", title: "Product of Array Except Self", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/product-of-array-except-self/", neetcodeUrl: "https://neetcode.io/problems/product-of-array-except-self" },
-    { topicSlug: "arrays-strings", title: "Valid Palindrome", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/valid-palindrome/", neetcodeUrl: "https://neetcode.io/problems/valid-palindrome" },
-    { topicSlug: "arrays-strings", title: "3Sum", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/3sum/", neetcodeUrl: "https://neetcode.io/problems/3sum" },
-    { topicSlug: "linked-lists", title: "Merge Two Sorted Lists", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/merge-two-sorted-lists/", neetcodeUrl: "https://neetcode.io/problems/merge-two-sorted-lists" },
-    { topicSlug: "linked-lists", title: "Linked List Cycle", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/linked-list-cycle/", neetcodeUrl: "https://neetcode.io/problems/linked-list-cycle" },
-    { topicSlug: "linked-lists", title: "Remove Nth Node From End", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/remove-nth-node-from-end-of-list/" },
-    { topicSlug: "stacks", title: "Valid Parentheses", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/valid-parentheses/", neetcodeUrl: "https://neetcode.io/problems/valid-parentheses" },
-    { topicSlug: "stacks", title: "Min Stack", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/min-stack/", neetcodeUrl: "https://neetcode.io/problems/min-stack" },
-    { topicSlug: "stacks", title: "Daily Temperatures", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/daily-temperatures/", neetcodeUrl: "https://neetcode.io/problems/daily-temperatures" },
-    { topicSlug: "queues", title: "Implement Queue using Stacks", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/implement-queue-using-stacks/" },
-    { topicSlug: "queues", title: "Sliding Window Maximum", difficulty: "Hard", leetcodeUrl: "https://leetcode.com/problems/sliding-window-maximum/", neetcodeUrl: "https://neetcode.io/problems/sliding-window-maximum" },
-    { topicSlug: "hashing", title: "Group Anagrams", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/group-anagrams/", neetcodeUrl: "https://neetcode.io/problems/group-anagrams" },
-    { topicSlug: "hashing", title: "Top K Frequent Elements", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/top-k-frequent-elements/", neetcodeUrl: "https://neetcode.io/problems/top-k-frequent-elements" },
-    { topicSlug: "hashing", title: "Subarray Sum Equals K", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/subarray-sum-equals-k/" },
-    // Tier 2
-    { topicSlug: "binary-trees-bst", title: "Lowest Common Ancestor", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-search-tree/", neetcodeUrl: "https://neetcode.io/problems/lowest-common-ancestor-of-a-bst" },
-    { topicSlug: "binary-trees-bst", title: "Validate BST", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/validate-binary-search-tree/", neetcodeUrl: "https://neetcode.io/problems/validate-bst" },
-    { topicSlug: "tries", title: "Implement Trie", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/implement-trie-prefix-tree/", neetcodeUrl: "https://neetcode.io/problems/implement-trie" },
-    { topicSlug: "heaps-priority-queues", title: "Kth Largest Element", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/kth-largest-element-in-an-array/", neetcodeUrl: "https://neetcode.io/problems/kth-largest-element" },
-    { topicSlug: "heaps-priority-queues", title: "Merge K Sorted Lists", difficulty: "Hard", leetcodeUrl: "https://leetcode.com/problems/merge-k-sorted-lists/", neetcodeUrl: "https://neetcode.io/problems/merge-k-sorted-lists" },
-    { topicSlug: "graphs-bfs-dfs", title: "Number of Islands", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/number-of-islands/", neetcodeUrl: "https://neetcode.io/problems/number-of-islands" },
-    { topicSlug: "graphs-bfs-dfs", title: "Clone Graph", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/clone-graph/", neetcodeUrl: "https://neetcode.io/problems/clone-graph" },
-    { topicSlug: "union-find", title: "Number of Connected Components", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/number-of-connected-components-in-an-undirected-graph/", neetcodeUrl: "https://neetcode.io/problems/connected-components" },
-    // Tier 3
-    { topicSlug: "sorting-algorithms", title: "Sort an Array", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/sort-an-array/" },
-    { topicSlug: "sorting-algorithms", title: "Sort Colors", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/sort-colors/" },
-    { topicSlug: "graph-algorithms", title: "Network Delay Time", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/network-delay-time/", neetcodeUrl: "https://neetcode.io/problems/network-delay-time" },
-    { topicSlug: "graph-algorithms", title: "Cheapest Flights Within K Stops", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/cheapest-flights-within-k-stops/", neetcodeUrl: "https://neetcode.io/problems/cheapest-flights" },
-    { topicSlug: "dynamic-programming", title: "House Robber", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/house-robber/", neetcodeUrl: "https://neetcode.io/problems/house-robber" },
-    { topicSlug: "dynamic-programming", title: "Longest Increasing Subsequence", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/longest-increasing-subsequence/", neetcodeUrl: "https://neetcode.io/problems/longest-increasing-subsequence" },
-    { topicSlug: "dynamic-programming", title: "Coin Change", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/coin-change/", neetcodeUrl: "https://neetcode.io/problems/coin-change" },
-    { topicSlug: "backtracking", title: "N-Queens", difficulty: "Hard", leetcodeUrl: "https://leetcode.com/problems/n-queens/", neetcodeUrl: "https://neetcode.io/problems/n-queens" },
-    { topicSlug: "backtracking", title: "Subsets", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/subsets/", neetcodeUrl: "https://neetcode.io/problems/subsets" },
-    { topicSlug: "string-algorithms", title: "Find the Index of the First Occurrence", difficulty: "Easy", leetcodeUrl: "https://leetcode.com/problems/find-the-index-of-the-first-occurrence-in-a-string/" },
-    { topicSlug: "string-algorithms", title: "Longest Palindromic Substring", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/longest-palindromic-substring/", neetcodeUrl: "https://neetcode.io/problems/longest-palindromic-substring" },
-    // Tier 4
-    { topicSlug: "core-patterns", title: "Merge Intervals", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/merge-intervals/", neetcodeUrl: "https://neetcode.io/problems/merge-intervals" },
-    { topicSlug: "core-patterns", title: "Find All Duplicates", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/find-all-duplicates-in-an-array/" },
-    { topicSlug: "core-patterns", title: "Course Schedule", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/course-schedule/", neetcodeUrl: "https://neetcode.io/problems/course-schedule" },
-    { topicSlug: "core-patterns", title: "Word Search", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/word-search/", neetcodeUrl: "https://neetcode.io/problems/word-search" },
-    { topicSlug: "mock-interview", title: "LRU Cache", difficulty: "Medium", leetcodeUrl: "https://leetcode.com/problems/lru-cache/", neetcodeUrl: "https://neetcode.io/problems/lru-cache" },
-    { topicSlug: "mock-interview", title: "Trapping Rain Water", difficulty: "Hard", leetcodeUrl: "https://leetcode.com/problems/trapping-rain-water/", neetcodeUrl: "https://neetcode.io/problems/trapping-rain-water" },
-  ];
-
   const topicMap = new Map<string, string>();
   const allTopics = await prisma.topic.findMany({ select: { id: true, slug: true } });
   allTopics.forEach((t) => topicMap.set(t.slug, t.id));
 
   for (const p of problemData) {
     const topicId = topicMap.get(p.topicSlug);
-    if (topicId) {
+    if (!topicId) continue;
+    const existing = await prisma.problem.findFirst({ where: { topicId, title: p.title } });
+    if (existing) {
+      if (p.hackerrankUrl) {
+        await prisma.problem.update({ where: { id: existing.id }, data: { hackerrankUrl: p.hackerrankUrl } });
+      }
+    } else {
       await prisma.problem.create({
-        data: {
-          topicId,
-          title: p.title,
-          difficulty: p.difficulty,
-          leetcodeUrl: p.leetcodeUrl,
-          hackerrankUrl: p.hackerrankUrl,
-          neetcodeUrl: p.neetcodeUrl,
-        },
+        data: { topicId, title: p.title, difficulty: p.difficulty, leetcodeUrl: p.leetcodeUrl, hackerrankUrl: p.hackerrankUrl, neetcodeUrl: p.neetcodeUrl },
       });
     }
   }
 
-  console.log(`Seeded ${problemData.length} problems across all topics`);
+  console.log(`Synced ${problemData.length} problems across all topics`);
   console.log("Seed complete!");
+}
+
+async function syncProblems() {
+  const topicMap = new Map<string, string>();
+  const allTopics = await prisma.topic.findMany({ select: { id: true, slug: true } });
+  allTopics.forEach((t) => topicMap.set(t.slug, t.id));
+
+  let created = 0;
+  let updated = 0;
+  for (const p of problemData) {
+    const topicId = topicMap.get(p.topicSlug);
+    if (!topicId) continue;
+    const existing = await prisma.problem.findFirst({ where: { topicId, title: p.title } });
+    if (existing) {
+      if (p.hackerrankUrl) {
+        await prisma.problem.update({ where: { id: existing.id }, data: { hackerrankUrl: p.hackerrankUrl } });
+        updated++;
+      }
+    } else {
+      await prisma.problem.create({
+        data: { topicId, title: p.title, difficulty: p.difficulty, leetcodeUrl: p.leetcodeUrl, hackerrankUrl: p.hackerrankUrl, neetcodeUrl: p.neetcodeUrl },
+      });
+      created++;
+    }
+  }
+  console.log(`Problem sync: ${created} created, ${updated} updated`);
 }
 
 main()
