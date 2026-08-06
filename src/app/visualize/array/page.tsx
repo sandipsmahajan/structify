@@ -11,9 +11,14 @@ const PAID_TEASERS = [
 ];
 
 export default async function ArrayVisualizerPage() {
-  const topic = await prisma.topic.findFirst({
-    where: { slug: "arrays-strings" },
-  });
+  let topic: { theoryContent?: string | null; realWorldUseCase?: string | null } | null = null;
+  try {
+    topic = await prisma.topic.findFirst({
+      where: { slug: "arrays-strings" },
+    });
+  } catch {
+    // DB not available — use fallback data
+  }
 
   return (
     <div className="pt-20 pb-16 px-4 max-w-7xl mx-auto min-h-screen">
