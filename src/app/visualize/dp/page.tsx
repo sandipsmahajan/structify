@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { DiamondCard } from "@/components/ui/diamond-card";
+import { GoDeeper } from "@/components/visualizers/go-deeper";
 
 const DpVisualizer = dynamic(() => import("@/components/visualizers/dp-visualizer"), {
   ssr: false,
@@ -16,10 +17,17 @@ const DpVisualizer = dynamic(() => import("@/components/visualizers/dp-visualize
   ),
 });
 
+const TEASERS = [
+  { title: "Graph BFS/DFS", description: "Force-directed node graphs with traversal animation and edge connectors", href: "/visualize/graph", accent: "emerald" as const },
+  { title: "Sorting Race", description: "3-algorithm synchronized comparison with real-time swap counters", href: "/visualize/sorting", accent: "violet" as const },
+  { title: "Array", description: "Interactive array with glowing cubes and Big-O complexity breakdown", href: "/visualize/array", accent: "cyan" as const },
+];
+
 export default function DpPage() {
   return (
     <div className="pt-24 pb-16 px-6 max-w-6xl mx-auto min-h-screen">
       <DpVisualizer />
+      <GoDeeper teasers={TEASERS} />
     </div>
   );
 }

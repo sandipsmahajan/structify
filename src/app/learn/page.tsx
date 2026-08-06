@@ -80,6 +80,12 @@ export default async function LearnPage() {
                   Tier {course.tier}
                 </span>
                 <h2 className="heading-display text-2xl">{course.title}</h2>
+                {course.isPaid && (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-bd-gold shrink-0">
+                    <rect x="3" y="11" width="18" height="11" rx="2" />
+                    <path d="M7 11V7a5 5 0 0110 0v4" />
+                  </svg>
+                )}
               </div>
 
               {userId && total > 0 && (
@@ -109,6 +115,14 @@ export default async function LearnPage() {
                   return (
                     <Link key={topic.id} href={`${href}/${topic.slug}`}>
                       <DiamondCard glow className="p-5 h-full group cursor-pointer transition-colors duration-200 hover:border-bd-border-active relative">
+                        {course.isPaid && (
+                          <div className="absolute top-3 right-3">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-bd-gold/50">
+                              <rect x="3" y="11" width="18" height="11" rx="2" />
+                              <path d="M7 11V7a5 5 0 0110 0v4" />
+                            </svg>
+                          </div>
+                        )}
                         <div className="flex items-start gap-3">
                           <span className={`w-8 h-8 clip-diamond-sm flex items-center justify-center text-xs font-bold shrink-0 ${isCompleted ? "bg-bd-emerald/20 text-bd-emerald" : tier.bg}`}>
                             {isCompleted ? (
