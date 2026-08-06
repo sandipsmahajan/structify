@@ -44,6 +44,7 @@ next-env.d.ts
 
 # database
 /dev.db
+prisma/dev.db
 
 # agent files
 .agents/
@@ -51,3 +52,4 @@ next-env.d.ts
 .windsurf/
 skills-lock.json
 CLAUDE.md
+AGENTS.md
