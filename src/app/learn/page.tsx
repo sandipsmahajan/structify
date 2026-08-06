@@ -1,8 +1,18 @@
 import { prisma } from "@/lib/prisma";
 import { DiamondCard } from "@/components/ui/diamond-card";
+import { auth } from "@/lib/auth";
 import Link from "next/link";
 
 export default async function LearnPage() {
+  const session = await auth();
+  const userId = session?.user?.id;
+
+  let isPaid = false;
+  if (userId) {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { isPaid: true } });
+    isPaid = user?.isPaid ?? false;
+  }
+
   const courses = await prisma.course.findMany({
     orderBy: { order: "asc" },
     include: {
@@ -25,12 +35,12 @@ export default async function LearnPage() {
       <div className="text-center mb-12">
         <div className="clip-diamond-sm inline-flex items-center gap-2 px-4 py-1.5 mb-6 bg-bd-cyan-dim">
           <span className="text-xs font-semibold uppercase tracking-widest text-bd-cyan">
-            Free Curriculum
+            Curriculum
           </span>
         </div>
         <h1 className="heading-display text-4xl mb-4">Learn DSA</h1>
         <p className="body-text max-w-xl mx-auto">
-          Progressive tiers from complexity basics through linear structures.
+          Progressive tiers from complexity basics through advanced algorithms.
           Every topic includes interactive 3D visualizers and theory.
         </p>
       </div>
@@ -38,6 +48,11 @@ export default async function LearnPage() {
       <div className="space-y-10">
         {courses.map((course) => {
           const tier = tierColors[course.tier] ?? tierColors[0];
+          const locked = course.isPaid && !isPaid;
+          const href = locked
+            ? `/paywall?slug=${course.slug}`
+            : `/learn/${course.slug}`;
+
           return (
             <section key={course.id}>
               <div className="flex items-center gap-3 mb-5">
@@ -45,11 +60,16 @@ export default async function LearnPage() {
                   Tier {course.tier}
                 </span>
                 <h2 className="heading-display text-2xl">{course.title}</h2>
+                {course.isPaid && (
+                  <span className={`text-[10px] uppercase tracking-wider ${isPaid ? "text-bd-emerald" : "text-bd-gold"}`}>
+                    {isPaid ? "Unlocked" : "Premium"}
+                  </span>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {course.topics.map((topic, i) => (
-                  <Link key={topic.id} href={`/learn/${course.slug}/${topic.slug}`}>
+                  <Link key={topic.id} href={href}>
                     <DiamondCard glow className="p-5 h-full group cursor-pointer transition-colors duration-200 hover:border-bd-border-active">
                       <div className="flex items-start gap-3">
                         <span className={`w-8 h-8 clip-diamond-sm flex items-center justify-center text-xs font-bold shrink-0 ${tier.bg}`}>
@@ -57,7 +77,15 @@ export default async function LearnPage() {
                         </span>
                         <div>
                           <h3 className="heading-section text-sm mb-1">{topic.title}</h3>
-                          <p className="text-xs text-bd-text-muted">Theory + Visualizer</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs text-bd-text-muted">Theory + Visualizer</p>
+                            {locked && (
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-bd-gold shrink-0">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                <path d="M7 11V7a5 5 0 0110 0v4" />
+                              </svg>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </DiamondCard>

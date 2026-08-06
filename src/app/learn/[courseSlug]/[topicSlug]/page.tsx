@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { DiamondCard } from "@/components/ui/diamond-card";
 import { DiamondButton } from "@/components/ui/diamond-button";
+import { auth } from "@/lib/auth";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 interface Props {
   params: Promise<{ courseSlug: string; topicSlug: string }>;
@@ -10,6 +11,8 @@ interface Props {
 
 export default async function TopicPage({ params }: Props) {
   const { courseSlug, topicSlug } = await params;
+  const session = await auth();
+  const userId = session?.user?.id;
 
   const topic = await prisma.topic.findFirst({
     where: { slug: topicSlug },
@@ -20,6 +23,12 @@ export default async function TopicPage({ params }: Props) {
   });
 
   if (!topic || topic.course.slug !== courseSlug) notFound();
+
+  if (topic.course.isPaid) {
+    if (!userId) redirect("/auth/signin");
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { isPaid: true } });
+    if (!user?.isPaid) redirect(`/paywall?slug=${topic.course.slug}`);
+  }
 
   const paragraphs = (topic.theoryContent ?? "")
     .split("\n\n")

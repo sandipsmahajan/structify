@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { DiamondCard } from "@/components/ui/diamond-card";
+import { auth } from "@/lib/auth";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 interface Props {
   params: Promise<{ courseSlug: string }>;
@@ -9,6 +10,8 @@ interface Props {
 
 export default async function CoursePage({ params }: Props) {
   const { courseSlug } = await params;
+  const session = await auth();
+  const userId = session?.user?.id;
 
   const course = await prisma.course.findUnique({
     where: { slug: courseSlug },
@@ -20,6 +23,12 @@ export default async function CoursePage({ params }: Props) {
   });
 
   if (!course) notFound();
+
+  if (course.isPaid) {
+    if (!userId) redirect("/auth/signin");
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { isPaid: true } });
+    if (!user?.isPaid) redirect(`/paywall?slug=${course.slug}`);
+  }
 
   const tierColors = [
     { accent: "cyan" as const, border: "border-bd-cyan/30", bg: "bg-bd-cyan-dim" },
@@ -40,6 +49,7 @@ export default async function CoursePage({ params }: Props) {
           Tier {course.tier}
         </span>
         <h1 className="heading-display text-3xl">{course.title}</h1>
+        {course.isPaid && <span className="text-[10px] text-bd-gold uppercase tracking-wider">Premium</span>}
       </div>
 
       <div className="space-y-3">
