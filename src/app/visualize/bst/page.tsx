@@ -1,8 +1,20 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { DiamondCard } from "@/components/ui/diamond-card";
 
-const BstVisualizer = dynamic(() => import("@/components/visualizers/bst-visualizer").then((mod) => mod.BstVisualizer), { ssr: false });
+const BstVisualizer = dynamic(() => import("@/components/visualizers/bst-visualizer").then((mod) => mod.BstVisualizer), {
+  ssr: false,
+  loading: () => (
+    <DiamondCard className="p-6">
+      <div className="animate-pulse space-y-4">
+        <div className="h-8 bg-bd-raised rounded w-48" />
+        <div className="h-[400px] bg-bd-raised rounded" />
+        <div className="h-10 bg-bd-raised rounded w-full" />
+      </div>
+    </DiamondCard>
+  ),
+});
 
 export default function BstVisualizerPage() {
   return (
