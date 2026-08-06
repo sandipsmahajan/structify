@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { DiamondCard } from "@/components/ui/diamond-card";
 import { DiamondButton } from "@/components/ui/diamond-button";
+import { CheckoutButton } from "@/components/payment/checkout-button";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -51,11 +52,7 @@ export default async function PaywallPage({
           problem sets, mock interviews, and future features forever.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Link href="/pricing">
-            <DiamondButton variant="gold" size="lg">
-              Buy Lifetime — &#8377;4,999
-            </DiamondButton>
-          </Link>
+          <CheckoutButton />
           <Link href="/learn">
             <DiamondButton variant="ghost" size="lg">
               Back to Free Tiers

@@ -1,5 +1,8 @@
+"use client";
+
 import { DiamondCard } from "@/components/ui/diamond-card";
 import { DiamondButton } from "@/components/ui/diamond-button";
+import { CheckoutButton } from "@/components/payment/checkout-button";
 import Link from "next/link";
 
 const comparisonFeatures = [
@@ -137,11 +140,9 @@ export default function PricingPage() {
             </p>
             <div className="heading-display text-5xl mb-2">&#8377;4,999</div>
             <p className="text-xs text-bd-text-muted mb-8">One-time payment. No subscription.</p>
-            <Link href="/pricing" className="mt-auto">
-              <DiamondButton variant="gold" className="w-full justify-center">
-                Buy Lifetime Access
-              </DiamondButton>
-            </Link>
+            <div className="mt-auto">
+              <CheckoutButton className="w-full justify-center" />
+            </div>
           </DiamondCard>
         </div>
 
@@ -239,11 +240,7 @@ export default function PricingPage() {
                   Start Free
                 </DiamondButton>
               </Link>
-              <Link href="/pricing">
-                <DiamondButton variant="gold" size="md">
-                  Buy Lifetime — &#8377;4,999
-                </DiamondButton>
-              </Link>
+              <CheckoutButton className="w-full justify-center" />
             </div>
           </DiamondCard>
         </div>
