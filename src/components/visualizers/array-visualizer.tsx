@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useFrame } from "@react-three/fiber";
+import * as THREE from "three";
 import { DataCube } from "./shared/data-cube";
 import { SceneLayout } from "./shared/scene-layout";
 import { DiamondCard } from "@/components/ui/diamond-card";
@@ -19,6 +21,165 @@ const PSEUDOCODE = [
 ];
 
 const INITIAL_VALUES = [42, 17, 63, 8, 95, 33, 71, 56];
+
+const MAX_VAL = 100;
+
+interface CubeState { id: number; value: number; targetX: number; entering?: boolean }
+
+function useCubeStates(values: number[]) {
+  const [states, setStates] = useState<CubeState[]>(() =>
+    values.map((v, i) => ({ id: i, value: v, targetX: i - (values.length - 1) / 2 }))
+  );
+
+  const setValues = useCallback((newVals: number[]) => {
+    const midpoint = (newVals.length - 1) / 2;
+    setStates(
+      newVals.map((v, i) => ({ id: i, value: v, targetX: i - midpoint, entering: true }))
+    );
+    // clear entering flag after animation
+    setTimeout(() => {
+      setStates((prev) => prev.map((s) => ({ ...s, entering: false })));
+    }, 400);
+  }, []);
+
+  return { states, setValues };
+}
+
+function SparkParticles({ position }: { position: [number, number, number] }) {
+  const pointsRef = useRef<THREE.Points>(null);
+  const count = 20;
+
+  const { geometry, velocities } = useMemo(() => {
+    const g = new THREE.BufferGeometry();
+    const positions = new Float32Array(count * 3);
+    const vel = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      positions[i * 3] = 0;
+      positions[i * 3 + 1] = 0;
+      positions[i * 3 + 2] = 0;
+      vel[i * 3] = (Math.random() - 0.5) * 3;
+      vel[i * 3 + 1] = Math.random() * 4 + 1;
+      vel[i * 3 + 2] = (Math.random() - 0.5) * 3;
+    }
+    g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    return { geometry: g, velocities: vel };
+  }, [count]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (pointsRef.current) pointsRef.current.visible = false;
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [position]);
+
+  useFrame((_, delta) => {
+    if (!pointsRef.current?.visible) return;
+    const pos = geometry.attributes.position.array as Float32Array;
+    for (let i = 0; i < count; i++) {
+      pos[i * 3] += velocities[i * 3] * delta;
+      pos[i * 3 + 1] += velocities[i * 3 + 1] * delta;
+      pos[i * 3 + 2] += velocities[i * 3 + 2] * delta;
+    }
+    geometry.attributes.position.needsUpdate = true;
+  });
+
+  return (
+    <points ref={pointsRef} position={position}>
+      <primitive object={geometry} attach="geometry" />
+      <pointsMaterial color="#E8C46A" size={0.08} transparent opacity={0.8} depthWrite={false} />
+    </points>
+  );
+}
+
+function ArrayScene({
+  states,
+  highlightedIndices,
+}: {
+  states: CubeState[];
+  highlightedIndices: number[];
+}) {
+  const [sparkPos, setSparkPos] = useState<[number, number, number] | null>(null);
+
+  return (
+    <>
+      {states.map((s, i) => {
+        const heightScale = s.value / MAX_VAL;
+        return (
+          <SmoothCube
+            key={s.id}
+            value={s.value}
+            targetX={s.targetX}
+            index={i}
+            heightScale={heightScale}
+            isHighlighted={highlightedIndices.includes(i)}
+            onSpark={(pos) => setSparkPos(pos)}
+          />
+        );
+      })}
+      {sparkPos && <SparkParticles position={sparkPos} />}
+    </>
+  );
+}
+
+function SmoothCube({
+  value,
+  targetX,
+  index,
+  heightScale,
+  isHighlighted,
+  onSpark,
+}: {
+  value: number;
+  targetX: number;
+  index: number;
+  heightScale: number;
+  isHighlighted: boolean;
+  onSpark: (pos: [number, number, number]) => void;
+}) {
+  const groupRef = useRef<THREE.Group>(null);
+  const prevHighlighted = useRef(isHighlighted);
+
+  useFrame(() => {
+    if (!groupRef.current) return;
+    const currentX = groupRef.current.position.x;
+    const diff = targetX - currentX;
+    if (Math.abs(diff) < 0.01) {
+      groupRef.current.position.x = targetX;
+    } else {
+      groupRef.current.position.x += diff * 0.15;
+    }
+
+    const targetY = heightScale * 1.3;
+    groupRef.current.position.y += (targetY - groupRef.current.position.y) * 0.12;
+
+    if (isHighlighted && !prevHighlighted.current) {
+      onSpark([groupRef.current.position.x, groupRef.current.position.y + 0.5, 0]);
+    }
+    prevHighlighted.current = isHighlighted;
+  });
+
+  const color = getGradientColor(index, 8, heightScale);
+
+  return (
+    <group ref={groupRef} position={[targetX, 0, 0]}>
+      <DataCube
+        value={value}
+        position={[0, 0, 0]}
+        isHighlighted={isHighlighted}
+        color={color}
+        heightScale={heightScale}
+      />
+    </group>
+  );
+}
+
+function getGradientColor(index: number, total: number, height: number): string {
+  const t = total > 1 ? index / (total - 1) : 0;
+  const hue = 180 + t * 100; // cyan → purple
+  const sat = 70 + height * 30;
+  const light = 50 + height * 20;
+  return `hsl(${hue}, ${sat}%, ${light}%)`;
+}
 
 export function ArrayVisualizer() {
   const [values, setValues] = useState<number[]>(INITIAL_VALUES);
@@ -55,8 +216,8 @@ export function ArrayVisualizer() {
             return prev;
           }
           const step = steps[next];
-          if (step.type === "compare") setComparisons((c) => c + 1);
-          if (step.type === "swap") setSwaps((s) => s + 1);
+          if (step?.type === "compare") setComparisons((c) => c + 1);
+          if (step?.type === "swap") setSwaps((s) => s + 1);
           return next;
         });
       }, 1000 / speed);
@@ -84,6 +245,8 @@ export function ArrayVisualizer() {
   const currentStepData = steps[currentStep] ?? null;
   const highlightedIndices = currentStepData?.indices ?? [];
 
+  const { states, setValues: setCubeValues } = useCubeStates(values);
+
   const handleInsert = () => {
     const val = Number(inputValue);
     const idx = insertIndex ? Number(insertIndex) : values.length;
@@ -91,6 +254,7 @@ export function ArrayVisualizer() {
     const newValues = [...values];
     newValues.splice(Math.min(idx, newValues.length), 0, val);
     setValues(newValues);
+    setCubeValues(newValues);
     setInputValue("");
     setInsertIndex("");
   };
@@ -98,8 +262,16 @@ export function ArrayVisualizer() {
   const handleDelete = () => {
     const idx = insertIndex ? Number(insertIndex) : values.length - 1;
     if (isNaN(idx) || idx < 0 || idx >= values.length) return;
-    setValues(values.filter((_, i) => i !== idx));
+    const newValues = values.filter((_, i) => i !== idx);
+    setValues(newValues);
+    setCubeValues(newValues);
     setInsertIndex("");
+  };
+
+  const handleShuffle = () => {
+    const shuffled = [...values].sort(() => Math.random() - 0.5);
+    setValues(shuffled);
+    setCubeValues(shuffled);
   };
 
   return (
@@ -115,16 +287,8 @@ export function ArrayVisualizer() {
 
         <div className="flex">
           <div className="flex-1 h-[400px]">
-            <SceneLayout cameraPosition={[0, 2, 10]}>
-              {values.map((val, i) => (
-                <DataCube
-                  key={i}
-                  value={val}
-                  position={[i - (values.length - 1) / 2, 0, 0]}
-                  isHighlighted={highlightedIndices.includes(i)}
-                  color={highlightedIndices.includes(i) ? "#B98CFF" : "#6FE3FF"}
-                />
-              ))}
+            <SceneLayout cameraPosition={[0, 3, 10]}>
+              <ArrayScene states={states} highlightedIndices={highlightedIndices} />
             </SceneLayout>
           </div>
           <CodeSyncPanel pseudocode={PSEUDOCODE} currentLine={currentStepData?.codeLine ?? -1} step={currentStepData} />
@@ -146,7 +310,7 @@ export function ArrayVisualizer() {
             />
           </div>
           <div>
-            <label className="block text-xs text-bd-text-muted mb-1">Index (optional)</label>
+            <label className="block text-xs text-bd-text-muted mb-1">Index</label>
             <input
               type="number"
               value={insertIndex}
@@ -157,6 +321,7 @@ export function ArrayVisualizer() {
           </div>
           <DiamondButton variant="primary" size="sm" onClick={handleInsert}>Insert</DiamondButton>
           <DiamondButton variant="secondary" size="sm" onClick={handleDelete}>Delete</DiamondButton>
+          <DiamondButton variant="ghost" size="sm" onClick={handleShuffle}>Shuffle</DiamondButton>
         </div>
       </DiamondCard>
     </div>

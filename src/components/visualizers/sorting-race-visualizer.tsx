@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useFrame } from "@react-three/fiber";
+import { Text } from "@react-three/drei";
+import * as THREE from "three";
 import { SceneLayout } from "./shared/scene-layout";
 import { DiamondCard } from "@/components/ui/diamond-card";
 import { VisualizerControlsPanel } from "@/lib/visualizer-engine/controls";
 import { OperationCounter } from "@/lib/visualizer-engine/operation-counter";
 import type { VisualizerControls } from "@/lib/visualizer-engine/types";
-import { Box } from "@react-three/drei";
 
 const INITIAL_VALUES = [64, 34, 25, 12, 22, 11, 90, 78, 45, 33, 56, 18];
 
@@ -81,53 +83,160 @@ const ALGORITHMS = [
   { name: "Insertion Sort", color: "#E8C46A", fn: insertionSortSteps },
 ];
 
-function RaceBar({ value, maxValue, color, index, offset, highlight }: {
-  value: number; maxValue: number; color: string;
-  index: number; offset: number; highlight: boolean;
-}) {
-  const height = (value / maxValue) * 2;
+function getCurrentValues(initVals: number[], state: SortState, step: number): number[] {
+  const vals = [...initVals];
+  for (let s = 0; s <= Math.min(step, state.values.length - 1); s++) {
+    const st = state.values[s];
+    if (st && st.swapped) {
+      [vals[st.i], vals[st.j]] = [vals[st.j], vals[st.i]];
+    }
+  }
+  return vals;
+}
+
+function SwapParticle({ position, color }: { position: THREE.Vector3; color: string }) {
+  const pointsRef = useRef<THREE.Points>(null);
+  const count = 8;
+
+  const { geometry, velocities } = useMemo(() => {
+    const g = new THREE.BufferGeometry();
+    const positions = new Float32Array(count * 3);
+    const vel = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      positions[i * 3] = 0;
+      positions[i * 3 + 1] = 0;
+      positions[i * 3 + 2] = 0;
+      vel[i * 3] = (Math.random() - 0.5) * 2;
+      vel[i * 3 + 1] = Math.random() * 3 + 0.5;
+      vel[i * 3 + 2] = (Math.random() - 0.5) * 2;
+    }
+    g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    return { geometry: g, velocities: vel };
+  }, [count]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (pointsRef.current) pointsRef.current.visible = false;
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [position]);
+
+  useFrame((_, delta) => {
+    if (!pointsRef.current?.visible) return;
+    const pos = geometry.attributes.position.array as Float32Array;
+    for (let i = 0; i < count; i++) {
+      pos[i * 3] += velocities[i * 3] * delta;
+      pos[i * 3 + 1] += velocities[i * 3 + 1] * delta;
+      pos[i * 3 + 2] += velocities[i * 3 + 2] * delta;
+    }
+    geometry.attributes.position.needsUpdate = true;
+  });
+
   return (
-    <Box args={[0.25, height, 0.25]} position={[index * 0.35 + offset, height / 2 - 1, 0]}>
-      <meshStandardMaterial
-        color={highlight ? "#FFFFFF" : color}
-        transparent opacity={highlight ? 0.9 : 0.7}
-        emissive={highlight ? color : "#000000"} emissiveIntensity={highlight ? 0.3 : 0}
-      />
-    </Box>
+    <points ref={pointsRef} position={position}>
+      <primitive object={geometry} attach="geometry" />
+      <pointsMaterial color={color} size={0.06} transparent opacity={0.9} depthWrite={false} />
+    </points>
   );
 }
 
-function RaceScene({ states, step }: { states: SortState[]; step: number }) {
+function AnimatedBar({
+  value, maxValue, color, barIndex, algoOffset, isHighlighted, showParticle,
+}: {
+  value: number; maxValue: number; color: string;
+  barIndex: number; algoOffset: number; isHighlighted: boolean; showParticle: boolean;
+}) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const targetHeight = (value / maxValue) * 2.5;
+  const x = barIndex * 0.35 + algoOffset;
+
+  useFrame(() => {
+    if (!meshRef.current) return;
+    const currentScale = meshRef.current.scale.y;
+    meshRef.current.scale.y += (targetHeight - currentScale) * 0.15;
+    // emit particle on swap highlight
+  });
+
+  const emissiveColor = isHighlighted ? new THREE.Color(color).multiplyScalar(0.5) : new THREE.Color("#000000");
+
+  return (
+    <group>
+      <mesh ref={meshRef} position={[x, targetHeight / 2 - 1.3, 0]} scale={[1, targetHeight, 1]}>
+        <boxGeometry args={[0.25, 1, 0.25]} />
+        <meshPhysicalMaterial
+          color={isHighlighted ? "#FFFFFF" : color}
+          emissive={emissiveColor}
+          emissiveIntensity={isHighlighted ? 0.6 : 0.1}
+          transparent
+          opacity={isHighlighted ? 0.9 : 0.55}
+          metalness={0.1}
+          roughness={0.3}
+        />
+      </mesh>
+      {isHighlighted && (
+        <mesh position={[x, 0, 0]}>
+          <boxGeometry args={[0.3, targetHeight + 0.1, 0.3]} />
+          <meshBasicMaterial color={color} transparent opacity={0.12} depthWrite={false} />
+        </mesh>
+      )}
+      {showParticle && (
+        <SwapParticle position={new THREE.Vector3(x, targetHeight / 2 + 0.3, 0)} color={color} />
+      )}
+    </group>
+  );
+}
+
+function RaceScene({ states, step, prevStep }: { states: SortState[]; step: number; prevStep: React.MutableRefObject<number> }) {
   const maxVal = Math.max(...INITIAL_VALUES);
-  const offsetPerAlgo = 4;
+  const offsetPerAlgo = 4.5;
 
   return (
     <SceneLayout cameraPosition={[-1, 0, 14]}>
-      {states.map((state, algoIdx) => {
-        const algoStep = Math.min(step, state.values.length);
-        const currentVals = INITIAL_VALUES.map((_, valIdx) => {
-          let val = INITIAL_VALUES[valIdx];
-          for (let s = 0; s <= algoStep; s++) {
-            const st = state.values[s];
-            if (st && st.swapped && (st.i === valIdx || st.j === valIdx)) {
-              if (st.i === valIdx) val = INITIAL_VALUES[st.j];
-              else if (st.j === valIdx) val = INITIAL_VALUES[st.i];
-            }
-          }
-          return val;
-        });
+      {[{ name: "Bubble", color: "#6FE3FF" }, { name: "Selection", color: "#B98CFF" }, { name: "Insertion", color: "#E8C46A" }].map((algo, ai) => (
+        <Text
+          key={algo.name}
+          position={[ai * offsetPerAlgo - 4.5, 2.2, 0]}
+          fontSize={0.25}
+          color={algo.color}
+          anchorX="center"
+          anchorY="middle"
+        >
+          {algo.name}
+        </Text>
+      ))}
 
+      {states.map((state, algoIdx) => {
+        const algoStep = Math.min(step, state.values.length - 1);
+        const currentVals = getCurrentValues(INITIAL_VALUES, state, algoStep);
         const highlightPair = algoStep < state.values.length ? state.values[algoStep] : null;
 
         return (
-          <group key={state.name} position={[algoIdx * offsetPerAlgo - 4, 0, 0]}>
-            {currentVals.map((val, i) => (
-              <RaceBar
-                key={i} value={val} maxValue={maxVal} color={state.color}
-                index={i} offset={algoIdx * offsetPerAlgo - 4}
-                highlight={highlightPair ? (highlightPair.i === i || highlightPair.j === i) : false}
-              />
-            ))}
+          <group key={state.name} position={[algoIdx * offsetPerAlgo - 4.5, 0, 0]}>
+            {currentVals.map((val, i) => {
+              const isHighlighted = highlightPair ? (highlightPair.i === i || highlightPair.j === i) : false;
+              const justSwapped = prevStep.current !== step && highlightPair?.swapped === true && (highlightPair.i === i || highlightPair.j === i);
+              return (
+                <AnimatedBar
+                  key={i}
+                  value={val}
+                  maxValue={maxVal}
+                  color={state.color}
+                  barIndex={i}
+                  algoOffset={0}
+                  isHighlighted={isHighlighted}
+                  showParticle={justSwapped}
+                />
+              );
+            })}
+
+            <Text
+              position={[5.5, -2.5, 0]}
+              fontSize={0.15}
+              color={state.color}
+              anchorX="center"
+            >
+              Swaps: {state.swaps} | Compares: {state.comparisons}
+            </Text>
           </group>
         );
       })}
@@ -137,20 +246,18 @@ function RaceScene({ states, step }: { states: SortState[]; step: number }) {
 
 export function SortingRaceVisualizer() {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [speed, setSpeed] = useState(2);
+  const [speed, setSpeed] = useState(3);
   const [step, setStep] = useState(0);
   const [maxSteps, setMaxSteps] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const prevStep = useRef(0);
 
   const states = useMemo(() => {
+    const vals = [...INITIAL_VALUES];
     return ALGORITHMS.map((algo) => {
-      const result = algo.fn([...INITIAL_VALUES]);
-      return {
-        name: algo.name, color: algo.color,
-        values: result.steps, swaps: result.swaps, comparisons: result.comparisons,
-      };
+      const result = algo.fn(vals);
+      return { name: algo.name, color: algo.color, values: result.steps, swaps: result.swaps, comparisons: result.comparisons };
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -169,6 +276,10 @@ export function SortingRaceVisualizer() {
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [isPlaying, speed, maxSteps]);
+
+  useEffect(() => {
+    prevStep.current = step;
+  }, [step]);
 
   const controls: VisualizerControls = {
     play: () => setIsPlaying(true),
@@ -192,7 +303,7 @@ export function SortingRaceVisualizer() {
         />
         <div className="flex">
           <div className="flex-1 h-[420px]">
-            <RaceScene states={states} step={step} />
+            <RaceScene states={states} step={step} prevStep={prevStep} />
           </div>
           <div className="min-w-[220px] max-w-[260px] p-4 glass border-l border-bd-border/40">
             <h4 className="text-xs font-semibold text-bd-text-muted uppercase tracking-wider mb-3">Legend</h4>

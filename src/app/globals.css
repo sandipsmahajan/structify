@@ -222,6 +222,23 @@ body {
   color: var(--color-bd-text-secondary);
 }
 
+/* ── DP Table cell pop animation ── */
+@keyframes cell-pop {
+  0%   { transform: scale(0.7); opacity: 0; }
+  40%  { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.cell-active {
+  position: relative;
+  z-index: 10;
+  box-shadow:
+    0 0 12px rgba(232, 196, 106, 0.35),
+    0 0 24px rgba(232, 196, 106, 0.15),
+    inset 0 0 12px rgba(232, 196, 106, 0.1);
+  transition: transform 0.15s var(--ease-crystal), box-shadow 0.2s var(--ease-crystal);
+}
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   *,

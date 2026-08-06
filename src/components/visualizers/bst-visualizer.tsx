@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DataCube } from "./shared/data-cube";
 import { SceneLayout } from "./shared/scene-layout";
+import { EdgeConnector } from "./shared/edge-connector";
 import { DiamondCard } from "@/components/ui/diamond-card";
 import { DiamondButton } from "@/components/ui/diamond-button";
 import { VisualizerControlsPanel } from "@/lib/visualizer-engine/controls";
@@ -10,7 +11,6 @@ import { CodeSyncPanel } from "@/lib/visualizer-engine/code-sync";
 import { OperationCounter } from "@/lib/visualizer-engine/operation-counter";
 import { generateAnimationSteps } from "@/lib/visualizer-engine/engine";
 import type { AnimationStep, VisualizerData, VisualizerControls } from "@/lib/visualizer-engine/types";
-import { Line } from "@react-three/drei";
 
 const PSEUDOCODE = [
   "function insert(root, val):",
@@ -81,16 +81,16 @@ export function BstVisualizer() {
 
   interface NodePos { value: number; x: number; y: number; idx: number }
   const positions: NodePos[] = [];
-  const edges: [number, number, number, number, number, number][] = [];
+  const edgeList: { start: [number, number, number]; end: [number, number, number]; idx: number }[] = [];
 
   const placeNode = (arr: number[], depth: number, left: number, right: number, parentIdx?: number) => {
-    if (left > right || arr.length === 0) return -1;
+    if (left > right) return -1;
     const mid = Math.floor((left + right) / 2);
     const nodeIdx = positions.length;
     positions.push({ value: arr[mid], x: (mid - rootIdx) * 1.6, y: -depth * 2.5, idx: values.indexOf(arr[mid]) });
     if (parentIdx !== undefined && parentIdx >= 0) {
       const p = positions[parentIdx];
-      edges.push([p.x, p.y, 0, positions[nodeIdx].x, positions[nodeIdx].y, 0]);
+      edgeList.push({ start: [p.x, p.y, 0], end: [positions[nodeIdx].x, positions[nodeIdx].y, 0], idx: nodeIdx });
     }
     const pi = nodeIdx;
     placeNode(arr, depth + 1, left, mid - 1, pi);
@@ -121,16 +121,28 @@ export function BstVisualizer() {
         <div className="flex">
           <div className="flex-1 h-[450px]">
             <SceneLayout cameraPosition={[0, 1, 14]}>
-              {edges.map((e, i) => (
-                <Line key={i} points={[[e[0], e[1], e[2]], [e[3], e[4], e[5]]]} color="#555A6A" lineWidth={1} />
-              ))}
+              {edgeList.map((e, i) => {
+                const childActive = highlightedIndices.includes(e.idx);
+                const parentNode = positions.find((p) => p.x === e.start[0] && p.y === e.start[1]);
+                const parentActive = parentNode ? highlightedIndices.includes(positions.indexOf(parentNode)) : false;
+                return (
+                  <EdgeConnector
+                    key={i}
+                    start={e.start}
+                    end={e.end}
+                    color={childActive || parentActive ? "#2DD4BF" : "#555A6A"}
+                    active={childActive || parentActive}
+                  />
+                );
+              })}
               {positions.map((p, i) => (
                 <DataCube
                   key={i}
                   value={p.value}
                   position={[p.x, p.y, 0]}
                   isHighlighted={highlightedIndices.includes(i)}
-                  color={highlightedIndices.includes(i) ? "#B98CFF" : "#2DD4BF"}
+                  color={highlightedIndices.includes(i) ? "#E8C46A" : "#2DD4BF"}
+                  highlightColor="#E8C46A"
                 />
               ))}
             </SceneLayout>

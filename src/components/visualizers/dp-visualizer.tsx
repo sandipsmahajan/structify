@@ -223,12 +223,12 @@ export default function DpVisualizer() {
 
   const info = PROBLEMS[problem];
 
-  const getCellColor = useCallback((r: number, c: number) => {
+  const getCellClass = useCallback((r: number, c: number) => {
     const key = `${r},${c}`;
     const isActive = r === currentStep?.row && c === currentStep?.col;
     const isInFill = activeFills.has(key);
 
-    if (isActive) return "bg-bd-gold text-bd-bg font-bold";
+    if (isActive) return "cell-active bg-bd-gold text-bd-bg font-bold scale-110 z-10";
     if (isInFill) return "bg-bd-cyan/20 text-bd-cyan";
     if (steps[step] && step > 0) {
       const filled = steps.slice(0, step + 1).some((s) =>
@@ -244,6 +244,12 @@ export default function DpVisualizer() {
 
   const currentValue = currentStep ? `${currentStep.row},${currentStep.col}: ${currentStep.value}` : "";
 
+  // Memoize which cells are newly filled on this step for count-up
+  const newFillsThisStep = useMemo(() => {
+    if (!currentStep) return new Set<string>();
+    return new Set(currentStep.fills.map((f) => `${f.r},${f.c}`));
+  }, [currentStep]);
+
   return (
     <div className="space-y-6">
       <DiamondCard className="p-6">
@@ -258,6 +264,73 @@ export default function DpVisualizer() {
               <option key={key} value={key}>{p.name}</option>
             ))}
           </select>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+          <div className="lg:col-span-2">
+            <p className="text-sm text-bd-text-secondary mb-3">{info.description}</p>
+            <div className="flex flex-wrap gap-4 text-xs">
+              <div className="code-block px-3 py-2">
+                <span className="text-bd-gold">Recurrence:</span>{" "}
+                <span className="text-bd-text-secondary font-mono">{info.recurrence}</span>
+              </div>
+              <div className="code-block px-3 py-2">
+                <span className="text-bd-emerald">Base:</span>{" "}
+                <span className="text-bd-text-secondary font-mono">{info.baseCase}</span>
+              </div>
+            </div>
+          </div>
+          <DiamondCard className="p-3">
+            <div className="text-[10px] text-bd-text-muted mb-1">Current Cell</div>
+            <div className="font-mono text-sm text-bd-gold mb-2 animate-pulse">{currentValue || "\u2014"}</div>
+            <div className="text-[10px] text-bd-text-muted">
+              Step {step + 1} / {totalSteps}
+            </div>
+          </DiamondCard>
+        </div>
+
+        {/* Progress bar */}
+        <div className="h-1.5 bg-bd-raised rounded-full overflow-hidden mb-4">
+          <div
+            className="h-full bg-gradient-to-r from-bd-cyan via-bd-violet to-bd-gold transition-all duration-300"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+
+        {/* DP Table */}
+        <div className="overflow-auto mb-6">
+          <div className="inline-block">
+            {/* Column labels */}
+            <div className="flex">
+              <div className={`${labelCellSize} shrink-0`} />
+              {Array.from({ length: cols }, (_, c) => (
+                <div key={c} className={`${cellSize} flex items-center justify-center text-[10px] font-mono text-bd-text-muted border-b border-bd-border/20`}>
+                  {colLabels[c] || ""}
+                </div>
+              ))}
+            </div>
+
+            {/* Table rows */}
+            {Array.from({ length: rows }, (_, r) => (
+              <div key={r} className="flex">
+                <div className={`${labelCellSize} flex items-center justify-center text-[10px] font-mono text-bd-text-muted shrink-0 border-r border-bd-border/20`}>
+                  {rowLabels[r] || ""}
+                </div>
+                {Array.from({ length: cols }, (_, c) => (
+                  <div
+                    key={c}
+                    className={`${cellSize} flex items-center justify-center text-xs font-mono border border-bd-border/10 transition-all duration-300 ${getCellClass(r, c)}`}
+                    style={newFillsThisStep.has(`${r},${c}`) ? { animation: "cell-pop 0.4s var(--ease-crystal) both" } : undefined}
+                    title={`dp[${r}][${c}]`}
+                  >
+                    {steps.slice(0, step + 1).some((s) => s.row === r && s.col === c)
+                      ? steps.findLast((s) => s.row === r && s.col === c)?.value ?? ""
+                      : ""}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
@@ -313,7 +386,8 @@ export default function DpVisualizer() {
                 {Array.from({ length: cols }, (_, c) => (
                   <div
                     key={c}
-                    className={`${cellSize} flex items-center justify-center text-xs font-mono border border-bd-border/10 transition-colors duration-300 ${getCellColor(r, c)}`}
+                    className={`${cellSize} flex items-center justify-center text-xs font-mono border border-bd-border/10 transition-all duration-300 ${getCellClass(r, c)}`}
+                    style={newFillsThisStep.has(`${r},${c}`) ? { animation: "cell-pop 0.4s var(--ease-crystal) both" } : undefined}
                     title={`dp[${r}][${c}]`}
                   >
                     {steps.slice(0, step + 1).some((s) => s.row === r && s.col === c)

@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useFrame } from "@react-three/fiber";
 import { SceneLayout } from "./shared/scene-layout";
+import { EdgeConnector } from "./shared/edge-connector";
 import { DiamondCard } from "@/components/ui/diamond-card";
 import { VisualizerControlsPanel } from "@/lib/visualizer-engine/controls";
 import { CodeSyncPanel } from "@/lib/visualizer-engine/code-sync";
 import { OperationCounter } from "@/lib/visualizer-engine/operation-counter";
 import type { VisualizerControls } from "@/lib/visualizer-engine/types";
-import { Line, Sphere, Text } from "@react-three/drei";
+import { Text } from "@react-three/drei";
+import * as THREE from "three";
 import * as d3 from "d3";
 
 const PSEUDOCODE = [
@@ -27,19 +30,55 @@ const EDGES: [number, number][] = [
   [0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6], [3, 7], [5, 7], [4, 6],
 ];
 
-function GraphNode({ label, position, color, isHighlighted }: { label: string; position: [number, number, number]; color: string; isHighlighted: boolean }) {
+function GlowNode({ label, position, color, isHighlighted, visited }: {
+  label: string; position: [number, number, number]; color: string; isHighlighted: boolean; visited: boolean;
+}) {
+  const ringRef = useRef<THREE.Mesh>(null);
+  const highlightColor = isHighlighted ? "#FFFFFF" : color;
+  const emissive = new THREE.Color(color).multiplyScalar(isHighlighted ? 1.2 : visited ? 0.7 : 0.2);
+
+  useFrame(() => {
+    if (ringRef.current && isHighlighted) {
+      ringRef.current.scale.setScalar(1 + Math.sin(Date.now() * 0.006) * 0.15);
+    }
+  });
+
   return (
     <group position={position}>
-      <Sphere args={[0.35, 32, 32]}>
-        <meshStandardMaterial
-          color={isHighlighted ? "#FFFFFF" : color}
-          emissive={color}
+      {isHighlighted && (
+        <mesh ref={ringRef}>
+          <ringGeometry args={[0.48, 0.52, 32]} />
+          <meshBasicMaterial color={color} side={THREE.DoubleSide} transparent opacity={0.3} depthWrite={false} />
+        </mesh>
+      )}
+
+      <mesh>
+        <sphereGeometry args={[0.32, 32, 32]} />
+        <meshPhysicalMaterial
+          color={highlightColor}
+          emissive={emissive}
           emissiveIntensity={isHighlighted ? 1 : 0.3}
           metalness={0.2}
-          roughness={0.4}
+          roughness={0.3}
+          clearcoat={0.1}
         />
-      </Sphere>
-      <Text position={[0, 0.55, 0]} fontSize={0.3} color="#E8ECF1" anchorX="center" anchorY="middle">
+      </mesh>
+
+      {visited && !isHighlighted && (
+        <mesh>
+          <sphereGeometry args={[0.38, 16, 16]} />
+          <meshBasicMaterial color={color} transparent opacity={0.15} depthWrite={false} />
+        </mesh>
+      )}
+
+      <Text
+        position={[0, 0.55, 0]}
+        fontSize={0.28}
+        color={isHighlighted ? "#FFFFFF" : "#E8ECF1"}
+        anchorX="center"
+        anchorY="middle"
+        fontWeight={isHighlighted ? "bold" : "normal"}
+      >
         {label}
       </Text>
     </group>
@@ -136,22 +175,23 @@ export function GraphVisualizer() {
               {EDGES.map(([s, t], i) => {
                 const isActive = visitedNodes.has(s) && visitedNodes.has(t);
                 return (
-                  <Line
+                  <EdgeConnector
                     key={i}
-                    points={[nodePositions[s], nodePositions[t]]}
+                    start={nodePositions[s]}
+                    end={nodePositions[t]}
                     color={isActive ? "#6FE3FF" : "#333548"}
-                    lineWidth={isActive ? 2 : 1}
-                    opacity={isActive ? 0.8 : 0.3}
+                    active={isActive}
                   />
                 );
               })}
               {NODE_VALUES.map((label, i) => (
-                <GraphNode
+                <GlowNode
                   key={i}
                   label={label}
                   position={nodePositions[i]}
-                  color={i === currentNode ? "#B98CFF" : visitedNodes.has(i) ? "#6FE3FF" : "#555A6A"}
+                  color={i === currentNode ? "#E8C46A" : visitedNodes.has(i) ? "#6FE3FF" : "#555A6A"}
                   isHighlighted={i === currentNode}
+                  visited={visitedNodes.has(i)}
                 />
               ))}
             </SceneLayout>

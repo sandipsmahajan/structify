@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DataCube } from "./shared/data-cube";
 import { SceneLayout } from "./shared/scene-layout";
+import { EdgeConnector } from "./shared/edge-connector";
 import { DiamondCard } from "@/components/ui/diamond-card";
 import { DiamondButton } from "@/components/ui/diamond-button";
 import { VisualizerControlsPanel } from "@/lib/visualizer-engine/controls";
@@ -10,7 +11,6 @@ import { CodeSyncPanel } from "@/lib/visualizer-engine/code-sync";
 import { OperationCounter } from "@/lib/visualizer-engine/operation-counter";
 import { generateAnimationSteps } from "@/lib/visualizer-engine/engine";
 import type { AnimationStep, VisualizerData, VisualizerControls } from "@/lib/visualizer-engine/types";
-import { Line } from "@react-three/drei";
 
 const PSEUDOCODE = [
   "node = head",
@@ -74,13 +74,11 @@ export function LinkedListVisualizer() {
   const spacing = 1.6;
   const startX = -((values.length - 1) * spacing) / 2;
 
-  const nodePositions = values.map((_, i) => [startX + i * spacing, 0, 0] as [number, number, number]);
-
-  const edges = values.slice(0, -1).map((_, i) => {
-    const from = nodePositions[i];
-    const to = nodePositions[i + 1];
-    return [from[0] + 0.45, from[1], from[2], to[0] - 0.45, to[1], to[2]] as [number, number, number, number, number, number];
-  });
+  const nodePositions = values.map((_, i): [number, number, number] => [startX + i * spacing, 0, 0]);
+  const edges = values.slice(0, -1).map((_, i): [[number, number, number], [number, number, number]] => [
+    [nodePositions[i][0] + 0.45, nodePositions[i][1], nodePositions[i][2]],
+    [nodePositions[i + 1][0] - 0.45, nodePositions[i + 1][1], nodePositions[i + 1][2]],
+  ]);
 
   const handleInsert = () => {
     const val = Number(inputValue);
@@ -107,15 +105,17 @@ export function LinkedListVisualizer() {
                   value={values[i]}
                   position={pos}
                   isHighlighted={highlightedIndices.includes(i)}
-                  color={highlightedIndices.includes(i) ? "#B98CFF" : "#6FE3FF"}
+                  color={highlightedIndices.includes(i) ? "#E8C46A" : "#6FE3FF"}
+                  highlightColor="#E8C46A"
                 />
               ))}
-              {edges.map((e, i) => (
-                <Line
+              {edges.map(([start, end], i) => (
+                <EdgeConnector
                   key={i}
-                  points={[[e[0], e[1], e[2]], [e[3], e[4], e[5]]]}
-                  color={highlightedIndices.includes(i) || highlightedIndices.includes(i + 1) ? "#B98CFF" : "#555A6A"}
-                  lineWidth={1.5}
+                  start={start}
+                  end={end}
+                  color={highlightedIndices.includes(i) || highlightedIndices.includes(i + 1) ? "#E8C46A" : "#6FE3FF"}
+                  active={highlightedIndices.includes(i) || highlightedIndices.includes(i + 1)}
                 />
               ))}
             </SceneLayout>
