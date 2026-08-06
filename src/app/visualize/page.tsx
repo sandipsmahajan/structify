@@ -62,6 +62,19 @@ const visualizers = [
     ),
     accent: "cyan" as const,
   },
+  {
+    title: "DP Table",
+    description: "Animated 2D DP table fill-in: Fibonacci, Knapsack, LCS, Edit Distance.",
+    href: "/visualize/dp",
+    icon: (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-bd-gold">
+        <rect x="2" y="2" width="8" height="8" /><rect x="14" y="2" width="8" height="8" />
+        <rect x="2" y="14" width="8" height="8" /><rect x="14" y="14" width="8" height="8" />
+        <path d="M10 6h4" /><path d="M6 10v4" />
+      </svg>
+    ),
+    accent: "gold" as const,
+  },
 ];
 
 export default function VisualizePage() {
