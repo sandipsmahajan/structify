@@ -185,6 +185,15 @@ body {
   50%      { opacity: 0.8; }
 }
 
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-down {
+  animation: slide-down 0.2s var(--ease-crystal) both;
+}
+
 /* ── Code block styling ── */
 .code-block {
   font-family: var(--font-mono);

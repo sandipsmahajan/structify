@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { DiamondButton } from "@/components/ui/diamond-button";
@@ -18,12 +18,39 @@ export function Navbar() {
   const { data: session, status } = useSession();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMobileOpen(false);
+      }
+    };
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, []);
+
+  const closeMenu = useCallback(() => setMobileOpen(false), []);
 
   const isLoading = status === "loading";
   const isSignedIn = status === "authenticated" && !!session?.user;
@@ -117,40 +144,50 @@ export function Navbar() {
       </nav>
 
       {mobileOpen && (
-        <div className="md:hidden glass border-t border-bd-border/60 px-6 py-4 space-y-2">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setMobileOpen(false)}
-              className="block py-2 text-sm font-medium text-bd-text-secondary hover:text-bd-text-primary transition-colors"
-            >
-              {link.label}
-            </Link>
-          ))}
-          <div className="pt-3 flex gap-3">
-            {isSignedIn ? (
-              <Link href="/api/auth/signout" className="flex-1">
-                <DiamondButton variant="ghost" size="sm" className="w-full justify-center">
-                  Sign Out
-                </DiamondButton>
+        <>
+          <div className="fixed inset-0 bg-black/60 z-40 md:hidden" onClick={closeMenu} />
+          <div ref={menuRef} className="md:hidden glass border-t border-bd-border/60 px-6 py-4 space-y-2 relative z-50 animate-slide-down">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={closeMenu}
+                className="block py-2.5 text-sm font-medium text-bd-text-secondary hover:text-bd-text-primary transition-colors"
+              >
+                {link.label}
               </Link>
-            ) : (
-              <>
-                <Link href="/auth/signin" className="flex-1">
-                  <DiamondButton variant="ghost" size="sm" className="w-full justify-center">
-                    Sign In
-                  </DiamondButton>
-                </Link>
-                <Link href="/auth/signin" className="flex-1">
-                  <DiamondButton variant="primary" size="sm" className="w-full justify-center">
-                    Start Free
-                  </DiamondButton>
-                </Link>
-              </>
-            )}
+            ))}
+            <div className="pt-3 flex gap-3 border-t border-bd-border/40">
+              {isSignedIn ? (
+                <>
+                  <Link href="/dashboard" onClick={closeMenu} className="flex-1">
+                    <DiamondButton variant="ghost" size="sm" className="w-full justify-center">
+                      Dashboard
+                    </DiamondButton>
+                  </Link>
+                  <Link href="/api/auth/signout" className="flex-1">
+                    <DiamondButton variant="ghost" size="sm" className="w-full justify-center">
+                      Sign Out
+                    </DiamondButton>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link href="/auth/signin" onClick={closeMenu} className="flex-1">
+                    <DiamondButton variant="ghost" size="sm" className="w-full justify-center">
+                      Sign In
+                    </DiamondButton>
+                  </Link>
+                  <Link href="/auth/signin" onClick={closeMenu} className="flex-1">
+                    <DiamondButton variant="primary" size="sm" className="w-full justify-center">
+                      Start Free
+                    </DiamondButton>
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </header>
   );
