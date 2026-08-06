@@ -1,4 +1,8 @@
-import { ArrayVisualizer } from "@/components/visualizers/array-visualizer";
+"use client";
+
+import dynamic from "next/dynamic";
+
+const ArrayVisualizer = dynamic(() => import("@/components/visualizers/array-visualizer").then((mod) => mod.ArrayVisualizer), { ssr: false });
 
 export default function ArrayVisualizerPage() {
   return (

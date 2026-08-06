@@ -1,4 +1,8 @@
-import { SortingRaceVisualizer } from "@/components/visualizers/sorting-race-visualizer";
+"use client";
+
+import dynamic from "next/dynamic";
+
+const SortingRaceVisualizer = dynamic(() => import("@/components/visualizers/sorting-race-visualizer").then((mod) => mod.SortingRaceVisualizer), { ssr: false });
 
 export default function SortingRacePage() {
   return (

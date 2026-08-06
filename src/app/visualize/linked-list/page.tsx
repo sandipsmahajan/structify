@@ -1,4 +1,8 @@
-import { LinkedListVisualizer } from "@/components/visualizers/linked-list-visualizer";
+"use client";
+
+import dynamic from "next/dynamic";
+
+const LinkedListVisualizer = dynamic(() => import("@/components/visualizers/linked-list-visualizer").then((mod) => mod.LinkedListVisualizer), { ssr: false });
 
 export default function LinkedListVisualizerPage() {
   return (

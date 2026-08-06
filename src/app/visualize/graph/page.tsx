@@ -1,4 +1,8 @@
-import { GraphVisualizer } from "@/components/visualizers/graph-visualizer";
+"use client";
+
+import dynamic from "next/dynamic";
+
+const GraphVisualizer = dynamic(() => import("@/components/visualizers/graph-visualizer").then((mod) => mod.GraphVisualizer), { ssr: false });
 
 export default function GraphVisualizerPage() {
   return (
