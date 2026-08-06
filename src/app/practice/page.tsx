@@ -1,12 +1,20 @@
 import { prisma } from "@/lib/prisma";
 import { DiamondCard } from "@/components/ui/diamond-card";
+import { DiamondButton } from "@/components/ui/diamond-button";
 import { SolveToggle } from "@/components/practice/solve-toggle";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
+import Link from "next/link";
 
 export default async function PracticePage() {
   const session = await auth();
   const userId = session?.user?.id;
+
+  let isPaid = false;
+  if (userId) {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { isPaid: true } });
+    isPaid = user?.isPaid ?? false;
+  }
 
   const courses = await prisma.course.findMany({
     orderBy: { order: "asc" },
@@ -28,10 +36,10 @@ export default async function PracticePage() {
   if (!courses.length) notFound();
 
   const tierColors = [
-    { accent: "cyan" as const, bg: "bg-bd-cyan-dim", text: "text-bd-cyan" },
-    { accent: "violet" as const, bg: "bg-bd-violet-dim", text: "text-bd-violet" },
-    { accent: "gold" as const, bg: "bg-bd-gold-dim", text: "text-bd-gold" },
-    { accent: "emerald" as const, bg: "bg-bd-cyan-dim", text: "text-bd-emerald" },
+    { accent: "cyan" as const, bg: "bg-bd-cyan-dim", text: "text-bd-cyan", bar: "from-bd-cyan to-bd-cyan/50" },
+    { accent: "violet" as const, bg: "bg-bd-violet-dim", text: "text-bd-violet", bar: "from-bd-violet to-bd-cyan" },
+    { accent: "gold" as const, bg: "bg-bd-gold-dim", text: "text-bd-gold", bar: "from-bd-gold to-bd-violet" },
+    { accent: "emerald" as const, bg: "bg-bd-cyan-dim", text: "text-bd-emerald", bar: "from-bd-emerald to-bd-cyan" },
   ];
 
   return (
@@ -48,15 +56,60 @@ export default async function PracticePage() {
 
       {courses.map((course) => {
         const tier = tierColors[course.tier] ?? tierColors[0];
+        const locked = course.isPaid && !isPaid;
+
+        const allProblems = course.topics.flatMap((t) => t.problems);
+        const total = allProblems.length;
+        const solved = userId
+          ? allProblems.filter((p) => p.userStatus?.[0]?.solved ?? false).length
+          : 0;
+        const pct = total > 0 ? Math.round((solved / total) * 100) : 0;
+
         return (
           <section key={course.id} className="mb-10">
-            <div className="flex items-center gap-3 mb-5">
+            <div className="flex items-center gap-3 mb-2">
               <span className={`clip-diamond-sm px-3 py-1 text-xs font-bold uppercase tracking-wider ${tier.bg} ${tier.text}`}>
                 Tier {course.tier}
               </span>
               <h2 className="heading-display text-xl">{course.title}</h2>
-              {course.isPaid && <span className="text-[10px] text-bd-gold uppercase tracking-wider">Premium</span>}
+              {course.isPaid && (
+                <span className={`text-[10px] uppercase tracking-wider ${isPaid ? "text-bd-emerald" : "text-bd-gold"}`}>
+                  {isPaid ? "Unlocked" : "Premium"}
+                </span>
+              )}
             </div>
+
+            {userId && total > 0 && (
+              <div className="mb-5">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs text-bd-text-muted">
+                    {solved} solved of {total}
+                  </span>
+                  <span className="text-xs text-bd-text-muted">{pct}%</span>
+                </div>
+                <div className="h-1.5 bg-bd-raised rounded-full overflow-hidden">
+                  <div
+                    className={`h-full bg-gradient-to-r ${tier.bar} transition-all duration-500`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {locked && (
+              <DiamondCard className="p-4 mb-4 bg-bd-gold-dim/30 border-bd-gold/20">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm text-bd-text-secondary">
+                      This tier contains {total} practice problems. Unlock lifetime access to solve them.
+                    </p>
+                  </div>
+                  <Link href="/pricing">
+                    <DiamondButton variant="gold" size="sm">Unlock Tier {course.tier}</DiamondButton>
+                  </Link>
+                </div>
+              </DiamondCard>
+            )}
 
             {course.topics.map((topic) => (
               <div key={topic.id} className="mb-6">
@@ -69,7 +122,7 @@ export default async function PracticePage() {
                       ? problem.userStatus?.[0]?.solved ?? false
                       : false;
                     return (
-                      <DiamondCard key={problem.id} className={`p-4 flex flex-wrap items-center justify-between gap-3 ${course.isPaid ? "opacity-60" : ""}`}>
+                      <DiamondCard key={problem.id} className={`p-4 flex flex-wrap items-center justify-between gap-3 ${locked ? "opacity-50" : ""}`}>
                         <div className="flex items-center gap-3">
                           <span
                             className={`px-2 py-0.5 clip-diamond-sm text-[10px] font-bold uppercase ${
@@ -106,7 +159,13 @@ export default async function PracticePage() {
                               HackerRank
                             </a>
                           )}
-                          <SolveToggle problemId={problem.id} initialSolved={isSolved} />
+                          {locked ? (
+                            <DiamondButton variant="ghost" size="sm" disabled className="opacity-40">
+                              Locked
+                            </DiamondButton>
+                          ) : (
+                            <SolveToggle problemId={problem.id} initialSolved={isSolved} />
+                          )}
                         </div>
                       </DiamondCard>
                     );
