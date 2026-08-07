@@ -2,6 +2,8 @@
 
 import { DiamondButton } from "@/components/ui/diamond-button";
 
+type CellValue = number | string | { label: string; sub: string } | boolean;
+
 interface Props {
   isPlaying: boolean;
   currentStep: number;
@@ -16,8 +18,9 @@ interface Props {
   customInput: string;
   onInputChange: (val: string) => void;
   onApply: () => void;
-  onPreset: (values: number[]) => void;
-  presets: { label: string; values: number[] }[];
+  onPreset: (values: CellValue[]) => void;
+  presets: { label: string; values: CellValue[] }[];
+  inputPlaceholder?: string;
 }
 
 export function ControlsPanel({
@@ -25,7 +28,7 @@ export function ControlsPanel({
   onPlay, onPause, onStepForward, onStepBack, onReset,
   onSpeedChange,
   customInput, onInputChange, onApply,
-  presets, onPreset,
+  presets, onPreset, inputPlaceholder,
 }: Props) {
   return (
     <div className="space-y-3">
@@ -73,7 +76,7 @@ export function ControlsPanel({
           value={customInput}
           onChange={(e) => onInputChange(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && onApply()}
-          placeholder="e.g. 10,25,5,80,45"
+          placeholder={inputPlaceholder ?? "e.g. 10,25,5,80,45"}
           className="flex-1 max-w-xs bg-bd-bg border border-bd-border rounded px-3 py-1.5 text-xs font-mono text-bd-text-primary placeholder:text-bd-text-muted focus:outline-none focus:border-bd-cyan/50"
         />
         <DiamondButton variant="secondary" size="sm" onClick={onApply}>Apply</DiamondButton>
