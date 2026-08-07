@@ -1,38 +1,40 @@
 import { prisma } from "@/lib/prisma";
 import { DiamondCard } from "@/components/ui/diamond-card";
 import { DiamondButton } from "@/components/ui/diamond-button";
-import { ArrayVisualizerClient } from "./client";
+import { GoDeeper } from "@/components/visualizers/go-deeper";
+import { ArrayVisualizer2D } from "@/components/visualizers/array-visualizer";
 import Link from "next/link";
 
 const PAID_TEASERS = [
-  { title: "Sorting Race", description: "3-way sorting algorithm comparison with real-time swap counters", href: "/visualize/sorting", accent: "violet" },
-  { title: "DP Table", description: "Step through dynamic programming matrix fills", href: "/visualize/dp", accent: "gold" },
-  { title: "Graph BFS/DFS", description: "Animated node traversal on force-directed graphs", href: "/visualize/graph", accent: "emerald" },
+  { title: "Sorting Race", description: "Compare Bubble, Selection, and Insertion sort side-by-side with swap counters", href: "/visualize/sorting", accent: "violet" as const },
+  { title: "DP Table", description: "Step through dynamic programming matrix fills with animated cell updates", href: "/visualize/dp", accent: "gold" as const },
+  { title: "Graph BFS/DFS", description: "Animated node traversal on force-directed graphs", href: "/visualize/graph", accent: "emerald" as const },
 ];
 
 export default async function ArrayVisualizerPage() {
   let topic: { theoryContent?: string | null; realWorldUseCase?: string | null } | null = null;
   try {
-    topic = await prisma.topic.findFirst({
-      where: { slug: "arrays-strings" },
-    });
-  } catch {
-    // DB not available — use fallback data
-  }
+    topic = await prisma.topic.findFirst({ where: { slug: "arrays-strings" } });
+  } catch { /* DB not available — use fallback */ }
 
   return (
     <div className="pt-20 pb-16 px-4 max-w-7xl mx-auto min-h-screen">
-      <ArrayVisualizerClient
-        theoryContent={topic?.theoryContent ?? "# Arrays\n\nA contiguous block of memory storing elements of the same type."}
-        realWorldUseCase={topic?.realWorldUseCase ?? "A 4K display is a 3840x2160 pixel array -- every Instagram filter applies matrix transforms across these arrays millions of times per second."}
+      <h1 className="heading-display text-3xl mb-2 text-center">
+        Array Visualizer
+        <span className="ml-3 inline-block align-middle clip-diamond-sm px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-bd-cyan-dim text-bd-cyan">Free</span>
+      </h1>
+
+      <ArrayVisualizer2D
+        theoryContent={topic?.theoryContent ?? ""}
+        realWorldUseCase={topic?.realWorldUseCase ?? ""}
       />
 
-      {/* Go Deeper -- Upgrade teaser */}
+      {/* Go Deeper */}
       <section className="mt-16">
         <div className="text-center mb-8">
           <h2 className="heading-display text-2xl mb-2">Go Deeper</h2>
           <p className="text-sm text-bd-text-muted max-w-lg mx-auto">
-            See how arrays power dynamic programming and graph algorithms -- unlock with Lifetime.
+            See how arrays power dynamic programming and graph algorithms — unlock with Lifetime.
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

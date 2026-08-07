@@ -1,329 +1,270 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useFrame } from "@react-three/fiber";
-import * as THREE from "three";
-import { DataCube } from "./shared/data-cube";
-import { SceneLayout } from "./shared/scene-layout";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { DiamondCard } from "@/components/ui/diamond-card";
-import { DiamondButton } from "@/components/ui/diamond-button";
-import { VisualizerControlsPanel } from "@/lib/visualizer-engine/controls";
-import { CodeSyncPanel } from "@/lib/visualizer-engine/code-sync";
-import { OperationCounter } from "@/lib/visualizer-engine/operation-counter";
-import { generateAnimationSteps } from "@/lib/visualizer-engine/engine";
-import type { AnimationStep, VisualizerData, VisualizerControls } from "@/lib/visualizer-engine/types";
+import { ControlsPanel } from "./engine/controls";
+import type { ArrayStep } from "./engine/types";
 
 const PSEUDOCODE = [
+  "// Array Traversal",
   "for i = 0 to n-1:",
-  "  access arr[i]",
-  "  process element",
-  "end for",
+  "  process(arr[i])",
+  "",
+  "// Insert at position k",
+  "for i = n down to k+1:",
+  "  arr[i] = arr[i-1]",
+  "arr[k] = value",
+  "n = n + 1",
 ];
 
-const INITIAL_VALUES = [42, 17, 63, 8, 95, 33, 71, 56];
+const BIG_O_TABLE = [
+  ["Access", "O(1)"],
+  ["Search", "O(n)"],
+  ["Insert (end)", "O(1)*"],
+  ["Insert (mid)", "O(n)"],
+  ["Delete (end)", "O(1)*"],
+  ["Delete (mid)", "O(n)"],
+];
 
-const MAX_VAL = 100;
+const PRESETS = [
+  { label: "Phone contacts sorted by name", values: [12, 47, 23, 89, 5, 61, 38] },
+  { label: "Exam scores ranked high to low", values: [95, 88, 76, 63, 52, 41, 30] },
+  { label: "Stock prices over a week", values: [142, 138, 145, 150, 147, 153, 149] },
+];
 
-interface CubeState { id: number; value: number; targetX: number; entering?: boolean }
-
-function useCubeStates(values: number[]) {
-  const [states, setStates] = useState<CubeState[]>(() =>
-    values.map((v, i) => ({ id: i, value: v, targetX: i - (values.length - 1) / 2 }))
-  );
-
-  const setValues = useCallback((newVals: number[]) => {
-    const midpoint = (newVals.length - 1) / 2;
-    setStates(
-      newVals.map((v, i) => ({ id: i, value: v, targetX: i - midpoint, entering: true }))
-    );
-    // clear entering flag after animation
-    setTimeout(() => {
-      setStates((prev) => prev.map((s) => ({ ...s, entering: false })));
-    }, 400);
-  }, []);
-
-  return { states, setValues };
+function buildSteps(values: number[]): ArrayStep[] {
+  const steps: ArrayStep[] = [];
+  steps.push({ type: "reset", index: -1, description: "Starting array", codeLine: -1 });
+  for (let i = 0; i < values.length; i++) {
+    steps.push({ type: "visit", index: i, value: values[i], description: `Access arr[${i}] = ${values[i]}`, codeLine: 1 });
+  }
+  steps.push({ type: "reset", index: -1, description: "Traversal complete", codeLine: -1 });
+  return steps;
 }
 
-function SparkParticles({ position }: { position: [number, number, number] }) {
-  const pointsRef = useRef<THREE.Points>(null);
-  const count = 20;
-
-  const { geometry, velocities } = useMemo(() => {
-    const g = new THREE.BufferGeometry();
-    const positions = new Float32Array(count * 3);
-    const vel = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      positions[i * 3] = 0;
-      positions[i * 3 + 1] = 0;
-      positions[i * 3 + 2] = 0;
-      vel[i * 3] = (Math.random() - 0.5) * 3;
-      vel[i * 3 + 1] = Math.random() * 4 + 1;
-      vel[i * 3 + 2] = (Math.random() - 0.5) * 3;
-    }
-    g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    return { geometry: g, velocities: vel };
-  }, [count]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (pointsRef.current) pointsRef.current.visible = false;
-    }, 800);
-    return () => clearTimeout(timer);
-  }, [position]);
-
-  useFrame((_, delta) => {
-    if (!pointsRef.current?.visible) return;
-    const pos = geometry.attributes.position.array as Float32Array;
-    for (let i = 0; i < count; i++) {
-      pos[i * 3] += velocities[i * 3] * delta;
-      pos[i * 3 + 1] += velocities[i * 3 + 1] * delta;
-      pos[i * 3 + 2] += velocities[i * 3 + 2] * delta;
-    }
-    geometry.attributes.position.needsUpdate = true;
-  });
-
-  return (
-    <points ref={pointsRef} position={position}>
-      <primitive object={geometry} attach="geometry" />
-      <pointsMaterial color="#E8C46A" size={0.08} transparent opacity={0.8} depthWrite={false} />
-    </points>
-  );
-}
-
-function ArrayScene({
-  states,
-  highlightedIndices,
-}: {
-  states: CubeState[];
-  highlightedIndices: number[];
+function FacetedCell({ value, index, state, isNew }: {
+  value: number; index: number; state: "idle" | "active" | "visited" | "inserting" | "deleting" | "comparing"; isNew?: boolean;
 }) {
-  const [sparkPos, setSparkPos] = useState<[number, number, number] | null>(null);
+  const colors = {
+    idle: "border-bd-border bg-bd-surface/80",
+    active: "border-bd-cyan bg-bd-cyan-dim shadow-[0_0_16px_rgba(111,227,255,0.3)] shadow-bd-cyan/30",
+    visited: "border-bd-violet/40 bg-bd-violet-dim/50",
+    inserting: "border-bd-emerald bg-bd-emerald/10 shadow-[0_0_16px_rgba(45,212,191,0.3)]",
+    deleting: "border-bd-ruby bg-bd-ruby/10 shadow-[0_0_12px_rgba(244,63,94,0.3)]",
+    comparing: "border-bd-gold bg-bd-gold-dim/30 shadow-[0_0_12px_rgba(232,196,106,0.3)]",
+  };
+
+  const textColor = state === "active" ? "text-bd-cyan" : state === "deleting" ? "text-bd-ruby" : state === "inserting" ? "text-bd-emerald" : state === "comparing" ? "text-bd-gold" : state === "visited" ? "text-bd-violet" : "text-bd-text-primary";
 
   return (
-    <>
-      {states.map((s, i) => {
-        const heightScale = s.value / MAX_VAL;
-        return (
-          <SmoothCube
-            key={s.id}
-            value={s.value}
-            targetX={s.targetX}
-            index={i}
-            heightScale={heightScale}
-            isHighlighted={highlightedIndices.includes(i)}
-            onSpark={(pos) => setSparkPos(pos)}
-          />
-        );
-      })}
-      {sparkPos && <SparkParticles position={sparkPos} />}
-    </>
+    <motion.div
+      layout
+      initial={isNew ? { scale: 0, opacity: 0 } : false}
+      animate={{ scale: 1, opacity: 1 }}
+      exit={{ scale: 0, opacity: 0 }}
+      transition={{ type: "spring", stiffness: 400, damping: 28 }}
+      className={`
+        relative clip-diamond min-w-[52px] h-[52px] flex flex-col items-center justify-center
+        border ${colors[state]}
+        transition-all duration-300
+      `}
+    >
+      <span className={`text-sm font-mono font-bold ${textColor}`}>{value}</span>
+      <span className="text-[9px] text-bd-text-muted mt-0.5">{index}</span>
+    </motion.div>
   );
 }
 
-function SmoothCube({
-  value,
-  targetX,
-  index,
-  heightScale,
-  isHighlighted,
-  onSpark,
-}: {
-  value: number;
-  targetX: number;
-  index: number;
-  heightScale: number;
-  isHighlighted: boolean;
-  onSpark: (pos: [number, number, number]) => void;
-}) {
-  const groupRef = useRef<THREE.Group>(null);
-  const prevHighlighted = useRef(isHighlighted);
-
-  useFrame(() => {
-    if (!groupRef.current) return;
-    const currentX = groupRef.current.position.x;
-    const diff = targetX - currentX;
-    if (Math.abs(diff) < 0.01) {
-      groupRef.current.position.x = targetX;
-    } else {
-      groupRef.current.position.x += diff * 0.15;
-    }
-
-    const targetY = heightScale * 1.3;
-    groupRef.current.position.y += (targetY - groupRef.current.position.y) * 0.12;
-
-    if (isHighlighted && !prevHighlighted.current) {
-      onSpark([groupRef.current.position.x, groupRef.current.position.y + 0.5, 0]);
-    }
-    prevHighlighted.current = isHighlighted;
-  });
-
-  const color = getGradientColor(index, 8, heightScale);
-
-  return (
-    <group ref={groupRef} position={[targetX, 0, 0]}>
-      <DataCube
-        value={value}
-        position={[0, 0, 0]}
-        isHighlighted={isHighlighted}
-        color={color}
-        heightScale={heightScale}
-      />
-    </group>
-  );
+interface Props {
+  theoryContent: string;
+  realWorldUseCase: string;
 }
 
-function getGradientColor(index: number, total: number, height: number): string {
-  const t = total > 1 ? index / (total - 1) : 0;
-  const hue = 180 + t * 100; // cyan → purple
-  const sat = 70 + height * 30;
-  const light = 50 + height * 20;
-  return `hsl(${hue}, ${sat}%, ${light}%)`;
-}
-
-export function ArrayVisualizer() {
-  const [values, setValues] = useState<number[]>(INITIAL_VALUES);
-  const [steps, setSteps] = useState<AnimationStep[]>([]);
-  const [currentStep, setCurrentStep] = useState(0);
+export function ArrayVisualizer2D({ realWorldUseCase }: Props) {
+  const [values, setValues] = useState(PRESETS[0].values);
+  const [customInput, setCustomInput] = useState(PRESETS[0].values.join(","));
   const [isPlaying, setIsPlaying] = useState(false);
+  const [step, setStep] = useState(0);
   const [speed, setSpeed] = useState(1);
-  const [comparisons, setComparisons] = useState(0);
-  const [swaps, setSwaps] = useState(0);
-  const [inputValue, setInputValue] = useState("");
-  const [insertIndex, setInsertIndex] = useState("");
-
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const buildSteps = useCallback((vals: number[]) => {
-    const data: VisualizerData = { structureType: "array", values: vals };
-    return generateAnimationSteps(data);
-  }, []);
+  const steps = useMemo(() => buildSteps(values), [values]);
+  const totalSteps = steps.length;
+  const currentStep = steps[step] ?? null;
+
+  const cellStates = useMemo(() => {
+    const states: Record<number, "idle" | "active" | "visited" | "inserting" | "deleting" | "comparing"> = {};
+    if (currentStep) {
+      if (currentStep.type === "visit") {
+        for (let i = 0; i < currentStep.index; i++) states[i] = "visited";
+        if (currentStep.index >= 0) states[currentStep.index] = "active";
+      } else if (currentStep.type === "highlight") {
+        states[currentStep.index] = "active";
+      } else if (currentStep.type === "insert") {
+        if (currentStep.index >= 0) states[currentStep.index] = "inserting";
+      } else if (currentStep.type === "delete") {
+        if (currentStep.index >= 0) states[currentStep.index] = "deleting";
+      } else if (currentStep.type === "compare") {
+        if (currentStep.index >= 0) states[currentStep.index] = "comparing";
+      } else if (currentStep.type === "reset") {
+        // no highlights
+      }
+    }
+    return states;
+  }, [currentStep]);
+
+  const stepTo = useCallback((s: number) => {
+    const clamped = Math.max(0, Math.min(s, totalSteps));
+    setStep(clamped);
+    if (clamped >= totalSteps) setIsPlaying(false);
+  }, [totalSteps]);
 
   useEffect(() => {
-    const generated = buildSteps(values);
-    setSteps(generated);
-    setCurrentStep(0);
-    setIsPlaying(false);
-  }, [values, buildSteps]);
-
-  useEffect(() => {
-    if (isPlaying && steps.length > 0) {
+    if (isPlaying) {
       timerRef.current = setInterval(() => {
-        setCurrentStep((prev) => {
+        setStep((prev) => {
           const next = prev + 1;
-          if (next >= steps.length) {
+          if (next >= totalSteps) {
             setIsPlaying(false);
             return prev;
           }
-          const step = steps[next];
-          if (step?.type === "compare") setComparisons((c) => c + 1);
-          if (step?.type === "swap") setSwaps((s) => s + 1);
           return next;
         });
-      }, 1000 / speed);
+      }, Math.max(100, 800 / speed));
     }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [isPlaying, steps, speed]);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [isPlaying, speed, totalSteps]);
 
-  const controls: VisualizerControls = {
-    play: () => setIsPlaying(true),
-    pause: () => setIsPlaying(false),
-    stepForward: () => setCurrentStep((p) => Math.min(p + 1, steps.length - 1)),
-    stepBack: () => setCurrentStep((p) => Math.max(p - 1, 0)),
-    reset: () => {
+  const applyCustomInput = () => {
+    const nums = customInput.split(",").map((s) => parseInt(s.trim(), 10)).filter((n) => !isNaN(n));
+    if (nums.length > 0) {
+      setValues(nums);
+      setCustomInput(nums.join(","));
       setIsPlaying(false);
-      setCurrentStep(0);
-      setComparisons(0);
-      setSwaps(0);
-    },
-    setSpeed,
-    setData: (data) => setValues(data.values),
+    }
   };
 
-  const currentStepData = steps[currentStep] ?? null;
-  const highlightedIndices = currentStepData?.indices ?? [];
-
-  const { states, setValues: setCubeValues } = useCubeStates(values);
-
-  const handleInsert = () => {
-    const val = Number(inputValue);
-    const idx = insertIndex ? Number(insertIndex) : values.length;
-    if (isNaN(val)) return;
-    const newValues = [...values];
-    newValues.splice(Math.min(idx, newValues.length), 0, val);
-    setValues(newValues);
-    setCubeValues(newValues);
-    setInputValue("");
-    setInsertIndex("");
+  const loadPreset = (vals: number[]) => {
+    setValues(vals);
+    setCustomInput(vals.join(","));
+    setIsPlaying(false);
   };
 
-  const handleDelete = () => {
-    const idx = insertIndex ? Number(insertIndex) : values.length - 1;
-    if (isNaN(idx) || idx < 0 || idx >= values.length) return;
-    const newValues = values.filter((_, i) => i !== idx);
-    setValues(newValues);
-    setCubeValues(newValues);
-    setInsertIndex("");
-  };
+  useEffect(() => { setStep(0); }, [values]);
 
-  const handleShuffle = () => {
-    const shuffled = [...values].sort(() => Math.random() - 0.5);
-    setValues(shuffled);
-    setCubeValues(shuffled);
-  };
+  const parsedDescription = useMemo(() => {
+    return "An array is a row of labeled slots in memory, like numbered lockers. You can instantly jump to any slot by its number (index), but inserting or deleting in the middle requires shifting everything over — like removing a chapter from a book and renumbering every page after it.";
+  }, []);
 
   return (
-    <div className="flex flex-col gap-4">
-      <DiamondCard className="overflow-hidden p-0">
-        <VisualizerControlsPanel
-          controls={controls}
-          isPlaying={isPlaying}
-          speed={speed}
-          currentStep={currentStep}
-          totalSteps={steps.length}
-        />
+    <div className="space-y-8">
+      {/* TOP: Plain-English Definition */}
+      <div className="text-center max-w-2xl mx-auto">
+        <div className="clip-diamond-sm inline-flex items-center gap-2 px-4 py-1.5 mb-4 bg-bd-cyan-dim">
+          <span className="text-xs font-semibold uppercase tracking-widest text-bd-cyan">What is an Array?</span>
+        </div>
+        <p className="text-sm text-bd-text-secondary leading-relaxed">{parsedDescription}</p>
+      </div>
 
-        <div className="flex">
-          <div className="flex-1 h-[400px]">
-            <SceneLayout cameraPosition={[0, 3, 10]}>
-              <ArrayScene states={states} highlightedIndices={highlightedIndices} />
-            </SceneLayout>
-          </div>
-          <CodeSyncPanel pseudocode={PSEUDOCODE} currentLine={currentStepData?.codeLine ?? -1} step={currentStepData} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* CENTER: 2D Visualization */}
+        <div className="lg:col-span-2">
+          <DiamondCard className="p-6">
+            <div className="flex items-end justify-center gap-3 min-h-[100px] py-8 overflow-x-auto">
+              <AnimatePresence mode="popLayout">
+                {values.map((v, i) => (
+                  <FacetedCell
+                    key={`${i}-${v}`}
+                    value={v}
+                    index={i}
+                    state={cellStates[i] ?? "idle"}
+                  />
+                ))}
+              </AnimatePresence>
+            </div>
+
+            <div className="mt-6">
+              <ControlsPanel
+                isPlaying={isPlaying}
+                currentStep={step}
+                totalSteps={totalSteps}
+                speed={speed}
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onStepForward={() => stepTo(step + 1)}
+                onStepBack={() => stepTo(step - 1)}
+                onReset={() => stepTo(0)}
+                onSpeedChange={setSpeed}
+                customInput={customInput}
+                onInputChange={setCustomInput}
+                onApply={applyCustomInput}
+                onPreset={loadPreset}
+                presets={PRESETS}
+              />
+            </div>
+          </DiamondCard>
         </div>
 
-        <OperationCounter comparisons={comparisons} swaps={swaps} />
-      </DiamondCard>
+        {/* SIDE PANEL */}
+        <div className="space-y-4">
+          {/* Pseudocode */}
+          <DiamondCard className="p-5">
+            <h3 className="heading-section text-sm mb-3 text-bd-cyan">Pseudocode</h3>
+            <div className="code-block p-3 text-xs font-mono">
+              {PSEUDOCODE.map((line, i) => (
+                <div
+                  key={i}
+                  className={`py-0.5 px-1 -mx-1 rounded transition-colors duration-200 ${
+                    currentStep?.codeLine === i ? "bg-bd-gold/15 text-bd-gold" :
+                    line.startsWith("//") ? "text-bd-text-muted italic" : "text-bd-text-secondary"
+                  }`}
+                >
+                  {line || "\u00A0"}
+                </div>
+              ))}
+            </div>
+          </DiamondCard>
 
-      <DiamondCard className="p-4">
-        <div className="flex flex-wrap items-end gap-3">
-          <div>
-            <label className="block text-xs text-bd-text-muted mb-1">Value</label>
-            <input
-              type="number"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              className="bg-bd-bg border border-bd-border rounded px-3 py-1.5 text-sm text-bd-text-primary w-24 font-mono"
-              placeholder="42"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-bd-text-muted mb-1">Index</label>
-            <input
-              type="number"
-              value={insertIndex}
-              onChange={(e) => setInsertIndex(e.target.value)}
-              className="bg-bd-bg border border-bd-border rounded px-3 py-1.5 text-sm text-bd-text-primary w-20 font-mono"
-              placeholder="0"
-            />
-          </div>
-          <DiamondButton variant="primary" size="sm" onClick={handleInsert}>Insert</DiamondButton>
-          <DiamondButton variant="secondary" size="sm" onClick={handleDelete}>Delete</DiamondButton>
-          <DiamondButton variant="ghost" size="sm" onClick={handleShuffle}>Shuffle</DiamondButton>
+          {/* Big-O Table */}
+          <DiamondCard className="p-5">
+            <h3 className="heading-section text-sm mb-3 text-bd-violet">Complexity</h3>
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-bd-border/30">
+                  <th className="text-left py-1 text-bd-text-muted font-medium">Operation</th>
+                  <th className="text-right py-1 text-bd-text-muted font-medium">Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {BIG_O_TABLE.map(([op, time]) => (
+                  <tr key={op} className="border-b border-bd-border/10">
+                    <td className="py-1.5 text-bd-text-secondary">{op}</td>
+                    <td className={`py-1.5 text-right font-mono ${time.startsWith("O(1)") ? "text-bd-emerald" : "text-bd-gold"}`}>{time}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="text-[10px] text-bd-text-muted mt-2">*Amortized with dynamic resizing</p>
+          </DiamondCard>
+
+          {/* Real-World Example */}
+          <DiamondCard className="p-5 border-bd-gold/20 bg-bd-gold-dim/10">
+            <h3 className="heading-section text-sm mb-2 text-bd-gold">Real-World Example</h3>
+            <p className="text-xs text-bd-text-secondary leading-relaxed">
+              When you delete a text message from a group chat, every message below it shifts up one slot — that's array shifting at work. A 4K TV screen is a 3840x2160 array of pixels, and when you apply an Instagram filter, it runs matrix math across every pixel in the array millions of times per second.
+            </p>
+          </DiamondCard>
+
+          {/* Current Step Info */}
+          {currentStep && (
+            <DiamondCard className="p-4">
+              <div className="text-[10px] text-bd-text-muted mb-1">Animation Step</div>
+              <div className="text-xs text-bd-text-secondary">{currentStep.description}</div>
+            </DiamondCard>
+          )}
         </div>
-      </DiamondCard>
+      </div>
     </div>
   );
 }
