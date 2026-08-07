@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
-import { AuthProvider } from "@/components/auth/auth-provider";
-import { Navbar } from "@/components/layout/navbar";
 import "./globals.css";
 
 const inter = Inter({
@@ -15,22 +13,22 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Structify — Master DSA with 3D Visualizations",
+  title: "Structify — Master DSA with Interactive Visualizations",
   description:
-    "Learn Data Structures & Algorithms through interactive 3D visualizers. Animated theory, live simulations, and curated practice problems — all in a premium Black Diamond experience.",
+    "Learn Data Structures & Algorithms through interactive visualizations, real-world scenarios, and guided interview preparation.",
   keywords: [
     "DSA",
     "data structures",
     "algorithms",
-    "3D visualizer",
+    "visualizer",
     "learn DSA",
     "coding interview",
     "interactive learning",
   ],
   openGraph: {
-    title: "Structify — Master DSA with 3D Visualizations",
+    title: "Structify — Master DSA with Interactive Visualizations",
     description:
-      "Interactive 3D visualizers for every major DSA topic. Learn, Visualize, Practice, Apply.",
+      "Interactive visualizers for every major DSA topic. Learn, Visualize, Practice, Apply.",
     type: "website",
   },
 };
@@ -47,11 +45,8 @@ export default function RootLayout({
       suppressHydrationWarning
       data-scroll-behavior="smooth"
     >
-      <body className="min-h-full flex flex-col bg-bd-bg text-bd-text-primary">
-        <AuthProvider>
-          <Navbar />
-          <main className="flex-1">{children}</main>
-        </AuthProvider>
+      <body className="min-h-full flex flex-col">
+        <main className="flex-1">{children}</main>
       </body>
     </html>
   );
