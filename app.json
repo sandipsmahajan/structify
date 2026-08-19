@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "Structify Mobile",
+    "slug": "structify-mobile",
+    "scheme": "structify",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "plugins": [
+      "expo-router",
+      "expo-asset"
+    ],
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
